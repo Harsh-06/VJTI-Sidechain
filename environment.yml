@@ -1,4 +1,4 @@
-name: pychain
+name: pysidechain
 channels:
   - defaults
 dependencies:
@@ -61,5 +61,5 @@ dependencies:
     - waitress==1.1.0
     - wrapt==1.10.11
     - wsgi-lineprof==0.5.0
-prefix: /opt/miniconda3/envs/pychain
+prefix: /opt/miniconda3/envs/pysidechain
 
