@@ -1,4 +1,4 @@
-# VJTI Chain
+# VJTI SideChain
 A complete implementation of a Proof of Authority (POA) Blockchain in python 3.7+
 
 ## Simplifications
@@ -6,10 +6,11 @@ A complete implementation of a Proof of Authority (POA) Blockchain in python 3.7
 - Communication between peers using http api calls
 - Can only send tokens to a single public key
 - Serialization completely done via json
-- No scripting language
+- A scrpting language named rigidity to allow smart contract programming.
 - All nodes assumed to be honest and non malicious
 - Peer discovery through a central server
 - Every node is a full node with a wallet, light nodes would be implemented as Android Apps.
+- Checkpoints of the blockchain are stored in the VJTI Chain
 
 ## Installing and running
 Use `conda` to create an env using the `environment.yml` file and run `src/fullnode.py`
