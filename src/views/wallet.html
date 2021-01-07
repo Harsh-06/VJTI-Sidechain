@@ -1,0 +1,102 @@
+% include('header.html', title="wallet")
+
+<script>
+     
+</script>
+
+<div class="container">
+    <h1 class="text-center" id="hidden">Send Coins</h1>
+    <div class="row">
+        <div class="col-md-8 col-xs-6" style="word-break: break-word">
+            <h4>My PublicKey: </h4><a class="stretched-link text-decoration-none" href="/address/{{ pubkey }}">{{ pubkey }}</a>
+        </div>
+        <div class="col-md-4 col-xs-6">
+            <h4 class="text-right" onclick="update_balance();">Balance: 
+                <span id="bal">0</span>
+                <span>
+                    <img class="img-fluid" alt="vjcoins" style="height: 30px" src="{{ get_url('static', filename='img/vjcoin.png') }}">
+                </span>
+            </h4>
+        </div>
+    </div>
+    
+
+% if message!= "":
+    <div class="alert alert-{{ message_type }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+% end
+   
+    <br>
+    <form action="" method="POST">
+        <div class="form-inline">
+            <label class="sr-only" for="number">Number</label>
+            <input type="number" required class="form-control mb-2 mr-sm-2" min="1" step="1" data-bind="value:amount" class="form-control form-control-lg" id="number" placeholder="Number of Transactions" name="number">
+        </div>
+        <div id="transaction">
+        </div>
+        
+        <button type="submit" class="btn btn-success mr-sm-2 mb-6">Send</button>
+    </form>
+</div>
+
+<script>
+    let HttpClient = function () {
+        this.get = function (aUrl, aCallback) {
+            let anHttpRequest = new XMLHttpRequest();
+            anHttpRequest.onreadystatechange = function () {
+                if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
+                    aCallback(anHttpRequest.responseText);
+            }
+            anHttpRequest.open("GET", aUrl, true);
+            anHttpRequest.send(null);
+        }
+    }
+    function update_balance() {
+        let client = new HttpClient();
+        client.get('/checkmybalance', function (response) {
+            document.getElementById("bal").textContent = response;
+        });
+    }
+    window.onload = update_balance;
+    window.setInterval(update_balance, 5000);
+
+    function updateFields(){
+        let number = $("#number").val();
+        let container = $("#transaction");
+        container.empty();
+        for (i=0;i<number;i++){
+            let form =  '<div class="form-inline"> ' + 
+                        '<label class="sr-only" for="port'+ i +'">Public Key</label> ' +
+                        '<input type="text" class="form-control mb-2 mr-sm-2" id="port'+ i +'" name="port'+ i +'" placeholder="Public Key" autofocus> ' +        
+                        '<label class="sr-only" for="amount'+ i +'">Amount</label> ' +
+                        '<div class="input-group mb-2 mr-sm-2"> ' +
+                        '    <input type="number" class="form-control" min="1" step="1" data-bind="value:amount" class="form-control form-control-lg" id="amount'+ i +'" placeholder="Enter Amount (VJcoins)" name="amount'+ i +'"> ' +            
+                        '</div> ' +
+                        '</div>'
+            container.append(form);
+        }
+    }
+
+    $(document).ready(
+        function() 
+        { 
+            $("#hidden").click(function(){
+            let password = prompt("Toggle Mining: Enter the Password", "");
+            $.post("/mining", password, function(data, status){
+                alert(data);
+            });
+            });
+
+            $("#number").on('input', updateFields);
+            $("#number").val(1);
+            updateFields();
+        });
+
+
+</script>
+
+% include('footer.html')

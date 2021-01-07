@@ -1,0 +1,58 @@
+% include('header.html', title="explorer")
+
+<%
+    from datetime import datetime
+    pub, receivers = tx.summarize()
+%>
+<div class="card text-center bg-dark-transparent text-white">
+    <div class="card-header">
+    <h1 class="text-center">Transaction Details</h1>
+    </div>
+    <div class="card-body">
+    <div class="table-responsive col-sm-12">    
+    <table class="table table-bordered table-dark-transparent">
+        <tr>
+            <th scope="row">Transaction Hash</th>
+            <td>{{ tx.hash() }}</td>
+        </tr>
+        <tr>
+            <th scope="row">Block Hash</th>
+            <td><a class="text-decoration-none" href="/block/{{ str(block) }}">{{ str(block) }}</a></td>
+        </tr>
+        <tr>
+            <th scope="row">Timestamp</th>
+            <td>{{ str(datetime.fromtimestamp(tx.timestamp).strftime("%d-%m-%Y %H:%M:%S")) }}   ({{ tx.timestamp }})</td>
+        </tr>
+        <tr>
+            <th scope="row">Sender Address</th>
+            <td><a class="text-decoration-none" href="/address/{{ pub }}">{{ pub }}</a></td>
+        </tr>
+        <tr>
+            <th scope="row">Message</th>
+            <td class="font-italic">{{ tx.message }}</td>
+        </tr>
+        <tr>
+            <th scope="row">Receivers</th>
+            <td>
+                <div class="table-responsive">
+                    <table class="table table-transparent text-white">
+                        <tr>
+                            <th>Amount</th>
+                            <th>Address</th>
+                        </tr>
+                        % for key, amt in receivers.items():
+                        <tr>
+                            <td>{{ amt }}</td>
+                            <td><a class="text-decoration-none" href="/address/{{ key }}">{{ key }}</a></td>
+                        </tr>
+                        % end
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+    </div>
+    </div>
+</div>
+
+% include('footer.html')
