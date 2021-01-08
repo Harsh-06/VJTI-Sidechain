@@ -4,11 +4,11 @@ channels:
 dependencies:
   - asn1crypto=1.4.0=py_0
   - ca-certificates=2020.12.8=h06a4308_0
-  - certifi=2020.12.5=py38h06a4308_0
-  - cffi=1.14.4=py38h261ae71_0
-  - chardet=4.0.0=py38h06a4308_1003
+  - certifi=2020.12.5=py37h06a4308_0
+  - cffi=1.14.4=py37h261ae71_0
+  - chardet=4.0.0=py37h06a4308_1003
   - click=7.1.2=py_0
-  - cryptography=3.3.1=py38h3c74f83_0
+  - cryptography=3.3.1=py37h3c74f83_0
   - flask=1.1.2=py_0
   - idna=3.1=pyhd3eb1b0_0
   - itsdangerous=1.1.0=py_0
@@ -17,18 +17,18 @@ dependencies:
   - libffi=3.3=he6710b0_2
   - libgcc-ng=9.1.0=hdf63c60_0
   - libstdcxx-ng=9.1.0=hdf63c60_0
-  - markupsafe=1.1.1=py38h7b6447c_0
+  - markupsafe=1.1.1=py37h14c3975_1
   - ncurses=6.2=he6710b0_1
   - openssl=1.1.1i=h27cfd23_0
-  - pep8=1.7.1=py38_0
-  - pip=20.3.3=py38h06a4308_0
+  - pep8=1.7.1=py37_0
+  - pip=20.3.3=py37h06a4308_0
   - pycparser=2.20=py_2
   - pyopenssl=20.0.1=pyhd8ed1ab_0
-  - pysocks=1.7.1=py38h06a4308_0
-  - python=3.8.2=hcff3b4d_14
+  - pysocks=1.7.1=py37h06a4308_0
+  - python=3.7.2=h0371630_0
   - readline=8.0=h7b6447c_0
   - requests=2.25.1=pyhd3eb1b0_0
-  - setuptools=51.0.0=py38h06a4308_2
+  - setuptools=51.0.0=py37h06a4308_2
   - six=1.15.0=pyh9f0ad1d_0
   - sqlite=3.33.0=h62c20be_0
   - tk=8.6.10=hbc83047_0
