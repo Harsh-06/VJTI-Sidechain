@@ -38,28 +38,28 @@ dependencies:
   - xz=5.2.4=h14c3975_4
   - zlib=1.2.11=ha838bed_2
   - pip:
-    - appdirs==1.4.4
-    - astroid==2.4.2
-    - attrs==20.3.0
-    - black==20.8b1
-    - bottle==0.12.19
-    - ecdsa==0.16.1
-    - fastecdsa==2.1.5
-    - isort==5.7.0
-    - lazy-object-proxy==1.5.2
+    - appdirs==1.4.3
+    - astroid==2.0.4
+    - attrs==18.1.0
+    - black==18.6b4
+    - bottle==0.12.13
+    - ecdsa==0.13
+    - fastecdsa==1.6.4
+    - isort==4.3.4
+    - lazy-object-proxy==1.3.1
     - mccabe==0.6.1
-    - mypy==0.790
-    - numpy==1.19.5
-    - pickledb==0.9.2
-    - pycodestyle==2.6.0
-    - pyflakes==2.2.0
-    - pylint==2.6.0
-    - simplejson==3.17.2
-    - sqlitedict==1.7.0
-    - toml==0.10.2
-    - typed-ast==1.4.2
-    - waitress==1.4.4
-    - wrapt==1.12.1
-    - wsgi-lineprof==0.12.0
+    - mypy==0.620
+    - numpy==1.15.1
+    - pickledb==0.7.1
+    - pycodestyle==2.3.1
+    - pyflakes==1.6.0
+    - pylint==2.1.1
+    - simplejson==3.16.0
+    - sqlitedict==1.5.0
+    - toml==0.9.4
+    - typed-ast==1.1.0
+    - waitress==1.1.0
+    - wrapt==1.10.11
+    - wsgi-lineprof==0.5.0
 prefix: /opt/miniconda3/envs/pysidechain
 
