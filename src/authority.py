@@ -1,15 +1,14 @@
 import copy
 import time
 from datetime import datetime
-import json
 from multiprocessing import Process
 from sys import getsizeof
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set
 
 import requests
 
 import utils.constants as consts
-from core import Block, BlockHeader, Chain, Transaction, SingleOutput
+from core import Block, BlockHeader, Chain, Transaction
 from utils.logger import logger
 from utils.utils import compress, dhash, merkle_hash, get_time_difference_from_now_secs
 from wallet import Wallet

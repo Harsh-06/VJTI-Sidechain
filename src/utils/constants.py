@@ -106,3 +106,6 @@ WALLET_DB_LOC = "wallet/"
 
 # AUTHORITY RULES
 AUTHORITY_RULES_LOC = "authority_rules.json"
+
+# Side Chain Block Headers are written to main chain after these many blocks
+SIDE_CHAIN_TO_MAIN_CHAIN_RATIO = 5
