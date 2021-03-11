@@ -12,6 +12,8 @@ from core import Block, BlockHeader, Chain, Transaction
 from utils.logger import logger
 from utils.utils import compress, dhash, merkle_hash, get_time_difference_from_now_secs
 from wallet import Wallet
+from chain_support import ChainSupport
+from vjti_chain_relayer import VJTIChainRelayer
 
 from authority_rules import authority_rules
 
@@ -41,6 +43,10 @@ class Authority:
     def start_mining(self, mempool: Set[Transaction], chain: Chain, wallet: Wallet):
         if not self.is_mining():
             if is_my_turn(wallet):
+                chain_support = ChainSupport(VJTIChainRelayer(wallet))
+                if not chain_support.chain_is_ok(chain):
+                    logger.error("Miner: Chain is not trusted")
+                    return
                 if len(mempool) > consts.MINING_TRANSACTION_THRESHOLD or (
                     len(mempool) > 0
                     and abs(get_time_difference_from_now_secs(chain.header_list[-1].timestamp)) > consts.MINING_INTERVAL_THRESHOLD
@@ -98,5 +104,7 @@ class Authority:
         block_header.signature = sign
         block = Block(header=block_header, transactions=mlist)
         requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/newblock", data=compress(block.to_json()))
+        chain_support = ChainSupport(VJTIChainRelayer(wallet))
+        chain_support.new_block(block)
         logger.info(f"Miner: Mined Block with {len(mlist)} transactions.")
-        return
+        return block

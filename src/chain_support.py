@@ -14,6 +14,8 @@ class ChainSupport:
         for header in reversed(header_list):
             if ChainSupport.__should_exist(header):
                 return self.block_header_exists(header)
+        if len(header_list) < consts.SIDE_CHAIN_TO_MAIN_CHAIN_RATIO:
+            return True
         return False
 
     def new_block(self, block: Block) -> bool:
