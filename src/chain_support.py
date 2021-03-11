@@ -1,4 +1,3 @@
-from dataclasses import replace
 from core import Block, BlockHeader, Chain
 from vjti_chain_relayer import VJTIChainRelayer
 import utils.constants as consts
@@ -13,17 +12,17 @@ class ChainSupport:
     def chain_is_ok(self, chain: Chain) -> bool:
         header_list = chain.header_list
         for header in reversed(header_list):
-            if ChainSupport._should_exist(header):
+            if ChainSupport.__should_exist(header):
                 return self.block_header_exists(header)
         return False
 
     def new_block(self, block: Block) -> bool:
-        if ChainSupport._should_exist(block.header):
-            self._write_to_main_chain(block)
+        if ChainSupport.__should_exist(block.header):
+            self.__write_to_main_chain(block)
 
     @staticmethod
-    def _should_exist(block_header: BlockHeader) -> bool:
+    def __should_exist(block_header: BlockHeader) -> bool:
         return block_header.height % consts.SIDE_CHAIN_TO_MAIN_CHAIN_RATIO == 0
-    
-    def _write_to_main_chain(self, block: Block) -> None:
+
+    def __write_to_main_chain(self, block: Block) -> None:
         return self.relayer.write(block.header)

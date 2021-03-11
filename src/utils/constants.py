@@ -47,6 +47,7 @@ BLOCK_MINING_SPEEDUP = 1
 
 # Max History
 MAX_TRANSACTION_HISTORY_TO_KEEP = 2048
+# TODO This may cause issues later on
 
 # Define Values from arguments passed
 parser = argparse.ArgumentParser()
