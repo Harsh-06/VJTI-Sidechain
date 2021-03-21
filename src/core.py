@@ -205,6 +205,9 @@ class Transaction(DataClassJson):
     # Message associated with this transaction
     message: str = ""
 
+    contract_id: str = ""
+    contract_code: str = ""
+    contract_output: str = ""
 
 @dataclass
 class BlockHeader(DataClassJson):

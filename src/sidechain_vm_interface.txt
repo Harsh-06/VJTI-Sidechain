@@ -1,0 +1,17 @@
+def read_contract_output(contract_id: str) -> data_stringified_json:
+    pass
+
+def call_contract_function(contract_id: str, function_name: str, params_stringified_json) -> function_return_value_str:
+    pass
+
+def send_amount(receiver_address: str, amount: int, message: str) -> bool:
+    sender_address = contract_deployer_address
+    pass
+
+======
+VM vm = VM(read_contract_output, call_contract_function, send_amount)
+vm.run_function(contract_code: str, function_name: str, params_stringified_json: str) -> function_return_value_str
+======
+2 + 2
+======
+// Due to contract ${contract_id}
