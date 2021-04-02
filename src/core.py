@@ -207,7 +207,7 @@ class Transaction(DataClassJson):
 
     contract_id: str = ""
     contract_code: str = ""
-    contract_output: str = ""
+    contract_output: Optional[str] = None
 
 @dataclass
 class BlockHeader(DataClassJson):

@@ -3,11 +3,12 @@ import time
 from functools import lru_cache
 from multiprocessing import Pool, Process
 from threading import Thread, Timer
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 import hashlib
 import inspect
 import requests
+import uuid
 import waitress
 from bottle import BaseTemplate, Bottle, request, response, static_file, template, error
 
@@ -403,6 +404,30 @@ def received_new_block():
 
 
 @lru_cache(maxsize=16)
+def get_tx_by_contract_id(request_data: bytes) -> Optional[Transaction]:
+    global BLOCKCHAIN
+    contract_id = decompress(request_data)
+    
+    header_list = read_header_list_from_db()
+    for header in header_list:
+        block = Block.from_json(get_block_from_db(header)).object()
+        for tx in block.transactions:
+            if tx.contract_id == contract_id:
+                return tx
+    return None
+
+
+@app.post("/get_tx")
+def get_tx():
+    log_ip(request, inspect.stack()[0][3])
+    tx = get_tx_by_contract_id(request.body.read())
+    if tx is None:
+        return None
+    else:
+        return tx.to_json()
+
+
+@lru_cache(maxsize=16)
 def process_new_transaction(request_data: bytes) -> str:
     global BLOCKCHAIN
     transaction_json = decompress(request_data)
@@ -411,6 +436,9 @@ def process_new_transaction(request_data: bytes) -> str:
             tx = Transaction.from_json(transaction_json).object()
             # Add transaction to Mempool
             if tx not in BLOCKCHAIN.mempool:
+                if tx.contract_output is not None:
+                    return False, "Contract Output should be None"
+                tx.contract_id = str(uuid.uuid4())
                 if BLOCKCHAIN.active_chain.is_transaction_valid(tx):
                     logger.debug("Valid Transaction received, Adding to Mempool")
                     BLOCKCHAIN.mempool.add(tx)

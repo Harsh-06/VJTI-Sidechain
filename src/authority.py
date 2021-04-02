@@ -14,6 +14,7 @@ from utils.utils import compress, dhash, merkle_hash, get_time_difference_from_n
 from wallet import Wallet
 from chain_support import ChainSupport
 from vjti_chain_relayer import VJTIChainRelayer
+from blockchain_vm_interface import BlockchainVMInterface
 
 from authority_rules import authority_rules
 
@@ -43,6 +44,7 @@ class Authority:
     def start_mining(self, mempool: Set[Transaction], chain: Chain, wallet: Wallet):
         if not self.is_mining():
             if is_my_turn(wallet):
+                interface = BlockchainVMInterface()
                 chain_support = ChainSupport(VJTIChainRelayer(wallet))
                 if not chain_support.chain_is_ok(chain):
                     logger.error("Miner: Chain is not trusted")
@@ -54,17 +56,24 @@ class Authority:
                     local_utxo = copy.deepcopy(chain.utxo)
                     mempool_copy = copy.deepcopy(mempool)
                     # Validating each transaction in block
-                    for t in mempool_copy:
+                    for tx in mempool_copy:
+                        if tx.contract_code != "":
+                            try:
+                                output = interface.run_function(tx.contract_code, "main", None)
+                                tx.contract_output = output
+                            except Exception:
+                                mempool.remove(tx)
+                                continue
                         # Remove the spent outputs
-                        for tinput in t.vin:
-                            so = t.vin[tinput].payout
+                        for txIn in tx.vin.values():
+                            so = txIn.payout
                             if so:
                                 if local_utxo.get(so)[0] is not None:
                                     local_utxo.remove(so)
                                 else:
-                                    mempool.remove(t)
+                                    mempool.remove(tx)
                             else:
-                                mempool.remove(t)
+                                mempool.remove(tx)
                     self.p = Process(target=self.__mine, args=(mempool, chain, wallet))
                     self.p.start()
                     logger.debug("Miner: Started mining")
