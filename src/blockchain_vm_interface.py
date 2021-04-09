@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Optional, List, Any
 import requests
 import utils.constants as consts
 from core import Transaction
 from utils.utils import compress
 from functools import lru_cache
-from vm import VM
+from vvm.VM import VM
 
 @lru_cache(maxsize=16)
 def __get_tx_by_contract_id(contract_id: str) -> Optional[Transaction]:
@@ -25,7 +25,7 @@ class BlockchainVMInterface:
         else:
             return tx.contract_output
 
-    def call_contract_function(self, contract_id: str, function_name: str, params: Optional[str]) -> Optional[str]:
+    def call_contract_function(self, contract_id: str, function_name: str, params: List[Any]) -> Optional[str]:
         tx = __get_tx_by_contract_id(contract_id)
         if tx is None:
             return None
@@ -33,9 +33,9 @@ class BlockchainVMInterface:
             return self.run_function(tx.contract_code, function_name, params)
 
     def send_amount(self, receiver_address: str, amount: int, message: Optional[str]) -> bool:
-        sender_address = contract_deployer_address_or_contract_address
+        sender_address = "contract_address"
         # TODO
         pass
 
-    def run_function(self, code: str, function_name: str, params: Optional[str]) -> Optional[str]:
+    def run_function(self, code: str, function_name: str, params: List[Any]) -> Optional[str]:
         return self.vm.run_function(code, function_name, params)
