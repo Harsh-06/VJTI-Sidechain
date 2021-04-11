@@ -85,19 +85,23 @@ class Transaction(DataClassJson):
         return int(dhash(self), 16)
 
     def __eq__(self, other):
-        attrs_sam = self.version == other.version
-        attrs_same = attrs_sam and self.timestamp == other.timestamp and self.locktime == other.locktime
-        txin_same = True
+        if self.contract_code != other.contract_code:
+            return False
+        if self.contract_id == "" and other.contract_id == "":
+            pass # Same as of now
+        elif self.contract_id == "" or other.contract_id == "":
+            pass # Same as of now
+        elif self.contract_id != other.contract_id:
+            return False
+        if not (self.version == other.version and self.timestamp == other.timestamp and self.locktime == other.locktime):
+            return False
         for txin in self.vin.values():
             if txin not in other.vin.values():
-                txin_same = False
-                break
-        txout_same = True
+                return False
         for txout in self.vout.values():
             if txout not in other.vout.values():
-                txout_same = False
-                break
-        return attrs_same and txin_same and txout_same
+                return False
+        return True
 
     def hash(self):
         return dhash(self)
@@ -131,9 +135,10 @@ class Transaction(DataClassJson):
 
     def is_valid(self):
         # No empty inputs or outputs -1
-        if len(self.vin) == 0 or len(self.vout) == 0:
-            logger.debug("Transaction: Empty vin/vout")
-            return False
+        if len(self.vin) < 0 or len(self.vout) < 0:
+            if self.contract_code == "":
+                logger.debug("Transaction: Empty vin/vout and no contract code")
+                return False
 
         # Transaction size should not exceed max block size -2
         if getsizeof(str(self)) > consts.MAX_BLOCK_SIZE_KB * 1024:
@@ -142,7 +147,7 @@ class Transaction(DataClassJson):
 
         # All outputs in legal money range -3
         for index, out in self.vout.items():
-            if out.amount > consts.MAX_COINS_POSSIBLE or out.amount <= 0:
+            if out.amount > consts.MAX_COINS_POSSIBLE or (out.amount < 0 and self.contract_code == ""):
                 logger.debug("Transaction: Invalid Amount" + str(out.amount))
                 return False
 
@@ -538,11 +543,11 @@ genesis_block_transaction = [
         vout={
             0: TxOut(
                 amount=1000000,
-                address="MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0tmjDG6v51ELMieRGuTfOgmfTe7BzNBsHQseqygX58+MQjNyjoOPkphghhYFpIFPzVORAI6Qief9lrncuWsOMg==",
+                address="MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE17svSZyUgdjXGeJxR/fDysgMmND4vlb4x+r7oSl22BNfj2F8DzyAK6IpWUbCkwq4QOu2Ivs4fZebovayd986Mw==",
             ),
             1: TxOut(
                 amount=1000000,
-                address="MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE3s5Iqp9VzlL7ngLfR2xb1RIGfuo+siL/zaZdeFblI8pnU5SpJCFEEMZDQBnEEPIOz9bv9lK46AwV3vLcN1VpCA==",
+                address="MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE17svSZyUgdjXGeJxR/fDysgMmND4vlb4x+r7oSl22BNfj2F8DzyAK6IpWUbCkwq4QOu2Ivs4fZebovayd986Mw==",
             ),
         },
     )

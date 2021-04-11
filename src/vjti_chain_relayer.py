@@ -9,8 +9,8 @@ class VJTIChainRelayer:
     def __init__(self, wallet: Wallet) -> None:
         self.wallet = wallet
         # TODO
-        self.record_account_public_key = 'something' # The public key of the account, to which all transactions will be sent
-        self.main_chain_url = 'something'
+        self.record_account_public_key = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0tmjDG6v51ELMieRGuTfOgmfTe7BzNBsHQseqygX58+MQjNyjoOPkphghhYFpIFPzVORAI6Qief9lrncuWsOMg==' # The public key of the account, to which all transactions will be sent
+        self.main_chain_url = 'http://localhost:9000'
 
     def write(self, block_header: BlockHeader) -> None:
         data = {

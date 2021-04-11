@@ -12,17 +12,21 @@ class Wallet:
     private_key: str = None
     public_key: str = None
 
-    def __init__(self):
-        keys = get_wallet_from_db(PORT)
-        if keys:
-            self.private_key, self.public_key = keys
-            logger.info("Wallet: Restoring Existing Wallet")
-            return
+    def __init__(self, pub_key=None, priv_key=None):
+        if pub_key is None or priv_key is None:
+            keys = get_wallet_from_db(PORT)
+            if keys:
+                self.private_key, self.public_key = keys
+                logger.info("Wallet: Restoring Existing Wallet")
+                return
 
-        self.private_key, self.public_key = self.generate_address()
-        logger.info("Wallet: Creating new Wallet")
-        logger.info(self)
-        add_wallet_to_db(PORT, self)
+            self.private_key, self.public_key = self.generate_address()
+            logger.info("Wallet: Creating new Wallet")
+            logger.info(self)
+            add_wallet_to_db(PORT, self)
+        else:
+            self.public_key = pub_key
+            self.private_key = priv_key
 
     def __repr__(self):
         return f"PubKey:\t{self.public_key}\nPrivKey:\t{self.private_key}"

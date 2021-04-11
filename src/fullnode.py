@@ -163,7 +163,7 @@ def send_bounty(receiver_public_keys: List[str], amounts: List[int]):
     elif MY_WALLET.public_key in receiver_public_keys:
         logger.debug("Cannot send to myself")
     else:
-        transaction = create_transaction(receiver_public_keys, amounts, MY_WALLET.public_key, message="Authority: Faucet Money")
+        transaction = create_transaction(receiver_public_keys, amounts, MY_WALLET.public_key, message="Authority: Faucet Money", contract_code="")
         transaction.sign(MY_WALLET)
         logger.info("Wallet: Attempting to Send Transaction")
         try:
@@ -182,7 +182,7 @@ def send_bounty(receiver_public_keys: List[str], amounts: List[int]):
     return False
 
 
-def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="") -> Transaction:
+def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="") -> Transaction:
     vout = {}
     vin = {}
     current_amount = 0
@@ -203,7 +203,8 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    tx = Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message)
+    tx = Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code)
+    tx.contract_id = str(uuid.uuid4())
     return tx
 
 
@@ -234,6 +235,8 @@ def make_transaction():
     bounty = int(data["bounty"])
     receiver_public_key = data["receiver_public_key"]
     sender_public_key = data["sender_public_key"]
+    contract_code = data.get("contract_code")
+    contract_code = contract_code if contract_code is not None else ""
     message = "No Message"
     if "message" in data:
         message = data["message"]
@@ -254,7 +257,7 @@ def make_transaction():
         response.status = 400
         return "Cannot send money to youself"
     else:
-        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message)
+        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code)
         data = {}
         data["send_this"] = transaction.to_json()
         transaction.vin = {}
@@ -280,7 +283,7 @@ def send_transaction():
         )
         if r.status_code == 400:
             response.status = 400
-            logger.error("Wallet: Could not Send Transaction. Invalid transaction")
+            logger.error("Wallet: Could not Send Transaction. Invalid transaction: " + r.text)
             return "Try Again"
     except Exception as e:
         response.status = 400
@@ -438,7 +441,6 @@ def process_new_transaction(request_data: bytes) -> str:
             if tx not in BLOCKCHAIN.mempool:
                 if tx.contract_output is not None:
                     return False, "Contract Output should be None"
-                tx.contract_id = str(uuid.uuid4())
                 if BLOCKCHAIN.active_chain.is_transaction_valid(tx):
                     logger.debug("Valid Transaction received, Adding to Mempool")
                     BLOCKCHAIN.mempool.add(tx)
