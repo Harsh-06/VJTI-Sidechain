@@ -25,25 +25,8 @@ PUBLIC_KEY_LENGTH = 124  # Length of Armoured Public Key
 
 MAX_MESSAGE_SIZE = 128  # Maximum Message Length for each Transaction
 
-FORK_CHAIN_HEIGHT = 7  # Keep only chains that are within this height of the active chain
-
 MAX_BLOCK_SIZE_KB = 4096
 MAX_COINS_POSSIBLE = 10000000 * 10
-
-INITIAL_BLOCK_REWARD = 5 * 100
-REWARD_UPDATE_INTERVAL = 20_000
-
-# A block cannot have timestamp greater than this time in the future
-BLOCK_MAX_TIME_FUTURE_SECS = 2 * 60 * 60
-
-INITIAL_BLOCK_DIFFICULTY = 1
-
-BLOCK_DIFFICULTY_UPDATE_INTERVAL = 5  # number of blocks
-AVERAGE_BLOCK_MINE_INTERVAL = 2 * 60  # seconds
-MAXIMUM_TARGET_DIFFICULTY = "0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-
-# Cheat Code
-BLOCK_MINING_SPEEDUP = 1
 
 # Max History
 MAX_TRANSACTION_HISTORY_TO_KEEP = 2048

@@ -9,10 +9,11 @@ class VJTIChainRelayer:
     def __init__(self, wallet: Wallet) -> None:
         self.wallet = wallet
         # TODO
-        self.record_account_public_key = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0tmjDG6v51ELMieRGuTfOgmfTe7BzNBsHQseqygX58+MQjNyjoOPkphghhYFpIFPzVORAI6Qief9lrncuWsOMg==' # The public key of the account, to which all transactions will be sent
+        self.record_account_public_key = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENvU/ThGGxgw++yDdyYq4FBCKJMcIYcaUp+Vbpzib0hwCSOTiTwu2/rhJReZv5S/PuTiuaGAeFnpOdCXXT2X1TQ==' # The public key of the account, to which all transactions will be sent
         self.main_chain_url = 'http://localhost:9000'
 
     def write(self, block_header: BlockHeader) -> None:
+        return None
         data = {
             'bounty': 1,
             'sender_public_key': self.wallet.public_key,
@@ -28,6 +29,7 @@ class VJTIChainRelayer:
         self.__send_transaction(send_this, signed_string)
 
     def exists(self, block_header: BlockHeader) -> bool:
+        return True
         message_for_block = VJTIChainRelayer.__get_message_for_block(block_header)
         data = {
             'public_key': self.record_account_public_key
