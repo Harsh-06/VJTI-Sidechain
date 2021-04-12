@@ -135,39 +135,37 @@ class Transaction(DataClassJson):
 
     def is_valid(self):
         # No empty inputs or outputs -1
-        if len(self.vin) < 0 or len(self.vout) < 0:
-            if self.contract_code == "":
-                logger.debug("Transaction: Empty vin/vout and no contract code")
-                return False
+        if len(self.vin) <= 0 or len(self.vout) <= 0:
+            logger.debug("Transaction: Empty vin/vout")
+            return False, "Transaction: Empty vin/vout"
 
         # Transaction size should not exceed max block size -2
         if getsizeof(str(self)) > consts.MAX_BLOCK_SIZE_KB * 1024:
             logger.debug("Transaction: Size Exceeded")
-            return False
+            return False, "Transaction: Size Exceeded"
 
         # All outputs in legal money range -3
         for index, out in self.vout.items():
-            if out.amount > consts.MAX_COINS_POSSIBLE or (out.amount < 0 and self.contract_code == ""):
+            if out.amount > consts.MAX_COINS_POSSIBLE or out.amount <= 0:
                 logger.debug("Transaction: Invalid Amount" + str(out.amount))
-                return False
+                return False, "Transaction: Invalid Amount" + str(out.amount)
 
         # Verify all Inputs are valid - 4
         for index, inp in self.vin.items():
-            if not inp.is_valid():
-                logger.debug("Transaction: Invalid TxIn")
-                return False
+            if not inp.is_valid()[0]:
+                return False, "Transaction: Invalid TxIn"
 
         # Verify locktime -5
         difference = get_time_difference_from_now_secs(self.locktime)
         if difference > 0:
             logger.debug("Transaction: Locktime Verify Failed")
-            return False
+            return False, "Transaction: Locktime Verify Failed"
 
         # Limit Message size
         if len(self.message) > consts.MAX_MESSAGE_SIZE:
             logger.debug("Transaction: Message exceeds allowed length")
-            return False
-        return True
+            return False, "Transaction: Message exceeds allowed length"
+        return True, ""
 
     def object(self):
         newtransaction = copy.deepcopy(self)
@@ -265,7 +263,8 @@ class Block(DataClassJson):
 
         # Make sure each transaction is valid -3
         for tx in self.transactions:
-            if not tx.is_valid():
+            ok, msg = tx.is_valid()
+            if not ok:
                 logger.debug("Block: Transaction is not Valid")
                 return False
 
@@ -365,31 +364,33 @@ class Chain:
                 self.utxo.set(SingleOutput(txid=thash, vout=touput), t.vout[touput], block.header)
 
     def is_transaction_valid(self, transaction: Transaction):
-        if not transaction.is_valid():
-            return False
+        ok, msg = transaction.is_valid()
+        if not ok:
+            return False, msg
 
         sum_of_all_inputs = 0
         sum_of_all_outputs = 0
         sign_copy_of_tx = copy.deepcopy(transaction)
         sign_copy_of_tx.vin = {}
+        sign_copy_of_tx.contract_output = None
         for inp, tx_in in transaction.vin.items():
             tx_out, block_hdr = self.utxo.get(tx_in.payout)
             # ensure the TxIn is present in utxo, i.e exists and has not been spent
             if block_hdr is None:
                 logger.debug(tx_in.payout)
                 logger.debug("Chain: Transaction not present in utxo")
-                return False
+                return False, "Chain: Transaction not present in utxo"
 
             # Verify that the Signature is valid for all inputs
             if not Wallet.verify(sign_copy_of_tx.to_json(), tx_in.sig, tx_out.address):
                 logger.debug("Chain: Invalid Signature")
-                return False
+                return False, "Chain: Invalid Signature"
 
             sum_of_all_inputs += tx_out.amount
 
         if sum_of_all_inputs > consts.MAX_COINS_POSSIBLE or sum_of_all_inputs < 0:
             logger.debug("Chain: Invalid input Amount")
-            return False
+            return False, "Chain: Invalid input Amount"
 
         for out, tx in transaction.vout.items():
             sum_of_all_outputs += tx.amount
@@ -397,14 +398,14 @@ class Chain:
         # ensure sum of amounts of all inputs is in valid amount range
         if sum_of_all_outputs > consts.MAX_COINS_POSSIBLE or sum_of_all_outputs < 0:
             logger.debug("Chain: Invalid output Amount")
-            return False
+            return False, "Chain: Invalid output Amount"
 
         # ensure sum of amounts of all inputs is > sum of amounts of all outputs
         if not sum_of_all_inputs == sum_of_all_outputs:
             logger.debug("Chain: input sum less than output sum")
-            return False
+            return False, "Chain: input sum less than output sum"
 
-        return True
+        return True, ""
 
     def is_block_valid(self, block: Block):
         # Check if the block is valid -1
@@ -422,7 +423,8 @@ class Chain:
 
         # Validating each transaction in block
         for t in block.transactions:
-            if self.is_transaction_valid(t):
+            ok, msg = self.is_transaction_valid(t)
+            if ok:
                 thash = dhash(t)
                 # Remove the spent outputs
                 for tinput in t.vin:
@@ -440,8 +442,8 @@ class Chain:
                 for touput in t.vout:
                     local_utxo.set(SingleOutput(txid=thash, vout=touput), t.vout[touput], block.header)
             else:
-                logger.debug("Chain: Transaction not valid")
-                return False
+                logger.debug("Chain: Transaction not valid - " + msg)
+                return False, msg
 
         # Validate Authority Signature
         timestamp = datetime.fromtimestamp(block.header.timestamp)
@@ -539,6 +541,9 @@ genesis_block_transaction = [
         locktime=0,
         timestamp=1551698572,
         message="Genesis Transaction",
+        contract_id="GenesisContractId",
+        contract_code="",
+        contract_output=None,
         vin={0: TxIn(payout=None, sig=consts.GENESIS_BLOCK_SIGNATURE, pub_key="Genesis")},
         vout={
             0: TxOut(

@@ -28,6 +28,18 @@
             <td><a class="text-decoration-none" href="/address/{{ pub }}">{{ pub }}</a></td>
         </tr>
         <tr>
+            <th scope="row">Contract Id</th>
+            <td>{{ tx.contract_id }}</td>
+        </tr>
+        <tr>
+            <th scope="row">Contract Code</th>
+            <td>{{ tx.contract_code }}</td>
+        </tr>
+        <tr>
+            <th scope="row">Contract Output</th>
+            <td>{{ tx.contract_output }}</td>
+        </tr>
+        <tr>
             <th scope="row">Message</th>
             <td class="font-italic">{{ tx.message }}</td>
         </tr>

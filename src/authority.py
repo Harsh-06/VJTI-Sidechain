@@ -59,9 +59,13 @@ class Authority:
                     for tx in mempool_copy:
                         if tx.contract_code != "":
                             try:
-                                output = interface.run_function(tx.contract_code, "main", None)
-                                tx.contract_output = output
-                            except Exception:
+                                output = interface.run_function(tx.contract_code, "main", [])
+                                logger.debug(f"Output of contract {tx.contract_id}: {output}")
+                                for txn in mempool:
+                                    if txn.contract_id == tx.contract_id:
+                                        txn.contract_output = output
+                            except Exception as e:
+                                logger.error(f"Error while running code of contact: {tx.contract_id}: {e}")
                                 mempool.remove(tx)
                                 continue
                         # Remove the spent outputs

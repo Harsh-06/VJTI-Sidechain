@@ -8,16 +8,62 @@ wallets = [
 ]
 genesis_receiver = wallets[0]
 
+contract_code = """
+function a(n) do
+  b := n + 1;
+  return b
+end;
+function main() do
+  val := a(5);
+  return val
+end
+"""
+contract_code = """
+function main() do
+  val := read_contract_output('18154c0c-bb62-4fcc-9369-1f10118d2d5e');
+  return val
+end
+"""
+contract_code = """
+function main() do
+    params := [50];
+    val := call_contract_function('18154c0c-bb62-4fcc-9369-1f10118d2d5e', 'a', params);
+    return val
+end
+"""
+contract_code = """
+function a(n) do
+  return n
+end;
+function main() do
+  val := a('abcd');
+  return val
+end
+"""
+contract_code = """
+function main() do
+    params := ['def'];
+    val := call_contract_function('e4032ece-9b7f-4813-b2c4-df9836837c19', 'a', params);
+    return val
+end
+"""
+contract_code = """
+function main() do
+    params := [5.5];
+    val := call_contract_function('e4032ece-9b7f-4813-b2c4-df9836837c19', 'a', params);
+    return val
+end
+"""
 r = requests.post("http://localhost:9000/makeTransaction", json={
     'bounty': 1,
-    'sender_public_key': genesis_receiver.public_key,
-    'receiver_public_key': wallets[1].public_key,
-    'message': "Test transfer"
+    'sender_public_key': wallets[1].public_key,
+    'receiver_public_key': wallets[2].public_key,
+    'contract_code': contract_code
 })
 tx_data = r.json()
 send_this = tx_data['send_this']
 sign_this = tx_data['sign_this']
-signed_string = genesis_receiver.sign(sign_this)
+signed_string = wallets[1].sign(sign_this)
 data = {
     'transaction': send_this,
     'signature': signed_string

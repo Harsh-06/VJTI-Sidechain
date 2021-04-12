@@ -237,7 +237,7 @@ def make_transaction():
     sender_public_key = data["sender_public_key"]
     contract_code = data.get("contract_code")
     contract_code = contract_code if contract_code is not None else ""
-    message = "No Message"
+    message = ""
     if "message" in data:
         message = data["message"]
 
@@ -284,11 +284,11 @@ def send_transaction():
         if r.status_code == 400:
             response.status = 400
             logger.error("Wallet: Could not Send Transaction. Invalid transaction: " + r.text)
-            return "Try Again"
+            return "Invalid Transaction: " + r.text
     except Exception as e:
         response.status = 400
         logger.error("Wallet: Could not Send Transaction. Try Again." + str(e))
-        return "Try Again"
+        return "Internal error, try again"
     else:
         logger.info("Wallet: Transaction Sent, Wait for it to be Mined")
     return "Done"
@@ -441,14 +441,15 @@ def process_new_transaction(request_data: bytes) -> str:
             if tx not in BLOCKCHAIN.mempool:
                 if tx.contract_output is not None:
                     return False, "Contract Output should be None"
-                if BLOCKCHAIN.active_chain.is_transaction_valid(tx):
+                ok, msg = BLOCKCHAIN.active_chain.is_transaction_valid(tx)
+                if ok:
                     logger.debug("Valid Transaction received, Adding to Mempool")
                     BLOCKCHAIN.mempool.add(tx)
                     # Broadcast block to other peers
                     send_to_all_peers("/newtransaction", request_data)
                 else:
-                    logger.debug("The transation is not valid, not added to Mempool")
-                    return False, "Not Valid Transaction"
+                    logger.debug("The transation is not valid, not added to Mempool - " + msg)
+                    return False, "Not Valid Transaction: " + msg
             else:
                 return True, "Transaction Already received"
         except Exception as e:

@@ -7,26 +7,26 @@ from functools import lru_cache
 from vvm.VM import VM
 
 @lru_cache(maxsize=16)
-def __get_tx_by_contract_id(contract_id: str) -> Optional[Transaction]:
+def get_tx_by_contract_id(contract_id: str) -> Optional[Transaction]:
     r = requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/get_tx", data=compress(contract_id))
     if r.text is None:
         return None
     else:
-        return Transaction.from_json(r.json())
+        return Transaction.from_json(r.text)
 
 class BlockchainVMInterface:
     def __init__(self) -> None:
         self.vm = VM(self.read_contract_output, self.call_contract_function, self.send_amount)
 
     def read_contract_output(self, contract_id: str) -> Optional[str]:
-        tx = __get_tx_by_contract_id(contract_id)
+        tx = get_tx_by_contract_id(contract_id)
         if tx is None:
             return None
         else:
             return tx.contract_output
 
     def call_contract_function(self, contract_id: str, function_name: str, params: List[Any]) -> Optional[str]:
-        tx = __get_tx_by_contract_id(contract_id)
+        tx = get_tx_by_contract_id(contract_id)
         if tx is None:
             return None
         else:
