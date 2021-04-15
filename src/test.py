@@ -54,7 +54,7 @@ function main() do
     return val
 end
 """
-r = requests.post("http://localhost:9000/makeTransaction", json={
+r = requests.post("http://localhost:9001/makeTransaction", json={
     'bounty': 1,
     'sender_public_key': wallets[1].public_key,
     'receiver_public_key': wallets[2].public_key,
@@ -68,5 +68,5 @@ data = {
     'transaction': send_this,
     'signature': signed_string
 }
-r = requests.post('http://localhost:9000/sendTransaction', json=data)
+r = requests.post('http://localhost:9001/sendTransaction', json=data)
 print(r.text)

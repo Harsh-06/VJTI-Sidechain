@@ -9,13 +9,13 @@ LOG_LEVEL = logging.DEBUG
 
 # DNS SEED CONSTANTS
 ENTRY_DURATION = 60 * 10  # duration in seconds
-SEED_SERVER_URL = "http://localhost:8080"
-SEED_SERVER_PORT = 8080
+SEED_SERVER_URL = "http://localhost:8081"
+SEED_SERVER_PORT = 8081
 
 # MINER CONSTANTS
-MINER_SERVER_PORT = 9000
+MINER_SERVER_PORT = 9001
 MINER_VERSION = 1
-MINING_INTERVAL_THRESHOLD = 5  # Seconds
+MINING_INTERVAL_THRESHOLD = 6  # Seconds
 MINING_TRANSACTION_THRESHOLD = 10  # No. of Transactions
 
 # BLOCKCHAIN CONSTANTS
@@ -90,6 +90,3 @@ WALLET_DB_LOC = "wallet/"
 
 # AUTHORITY RULES
 AUTHORITY_RULES_LOC = "authority_rules.json"
-
-# Side Chain Block Headers are written to main chain after these many blocks
-SIDE_CHAIN_TO_MAIN_CHAIN_RATIO = 5
