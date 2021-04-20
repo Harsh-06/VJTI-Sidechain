@@ -3,7 +3,7 @@ import time
 from functools import lru_cache
 from multiprocessing import Pool, Process
 from threading import Thread, Timer
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 import hashlib
 import inspect
@@ -41,7 +41,7 @@ def mining_thread_task():
                 miner.start_mining(BLOCKCHAIN.mempool, BLOCKCHAIN.active_chain, MY_WALLET)
             except Exception as e:
                 miner.stop_mining()
-                logger.debug("Miner: Error while mining:" + str(e))
+                logger.debug(f"Miner: Error while mining: {type(e)}({str(e)})")
         time.sleep(consts.MINING_INTERVAL_THRESHOLD // 2)
 
 
@@ -203,9 +203,7 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    tx = Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code)
-    tx.contract_id = str(uuid.uuid4())
-    return tx
+    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_id = str(uuid.uuid4()))
 
 
 def get_ip(request):
@@ -431,7 +429,7 @@ def get_tx():
 
 
 @lru_cache(maxsize=16)
-def process_new_transaction(request_data: bytes) -> str:
+def process_new_transaction(request_data: bytes) -> Tuple[bool, str]:
     global BLOCKCHAIN
     transaction_json = decompress(request_data)
     if transaction_json:
@@ -445,6 +443,7 @@ def process_new_transaction(request_data: bytes) -> str:
                 if ok:
                     logger.debug("Valid Transaction received, Adding to Mempool")
                     BLOCKCHAIN.mempool.add(tx)
+                    logger.debug(f"Mempool now contains {len(BLOCKCHAIN.mempool)} transaction(s)")
                     # Broadcast block to other peers
                     send_to_all_peers("/newtransaction", request_data)
                 else:

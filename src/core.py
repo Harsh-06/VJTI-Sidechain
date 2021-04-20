@@ -7,7 +7,7 @@ from operator import attrgetter
 from statistics import median
 from sys import getsizeof
 from threading import RLock
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import utils.constants as consts
 from utils.dataclass_json import DataClassJson
@@ -85,23 +85,7 @@ class Transaction(DataClassJson):
         return int(dhash(self), 16)
 
     def __eq__(self, other):
-        if self.contract_code != other.contract_code:
-            return False
-        if self.contract_id == "" and other.contract_id == "":
-            pass # Same as of now
-        elif self.contract_id == "" or other.contract_id == "":
-            pass # Same as of now
-        elif self.contract_id != other.contract_id:
-            return False
-        if not (self.version == other.version and self.timestamp == other.timestamp and self.locktime == other.locktime):
-            return False
-        for txin in self.vin.values():
-            if txin not in other.vin.values():
-                return False
-        for txout in self.vout.values():
-            if txout not in other.vout.values():
-                return False
-        return True
+        return self.contract_id != other.contract_id
 
     def hash(self):
         return dhash(self)
@@ -133,7 +117,7 @@ class Transaction(DataClassJson):
             receivers[address] += self.vout[i].amount      
         return pub_key, receivers
 
-    def is_valid(self):
+    def is_valid(self) -> Tuple[bool, str]:
         # No empty inputs or outputs -1
         if len(self.vin) <= 0 or len(self.vout) <= 0:
             logger.debug("Transaction: Empty vin/vout")
@@ -152,7 +136,7 @@ class Transaction(DataClassJson):
 
         # Verify all Inputs are valid - 4
         for index, inp in self.vin.items():
-            if not inp.is_valid()[0]:
+            if not inp.is_valid():
                 return False, "Transaction: Invalid TxIn"
 
         # Verify locktime -5
@@ -363,7 +347,7 @@ class Chain:
             for touput in t.vout:
                 self.utxo.set(SingleOutput(txid=thash, vout=touput), t.vout[touput], block.header)
 
-    def is_transaction_valid(self, transaction: Transaction):
+    def is_transaction_valid(self, transaction: Transaction) -> Tuple[bool, str]:
         ok, msg = transaction.is_valid()
         if not ok:
             return False, msg

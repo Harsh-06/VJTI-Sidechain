@@ -1,6 +1,7 @@
 import json
 import random
 from typing import Any, Dict, List
+import uuid
 
 import requests
 from flask import Flask, jsonify, request
@@ -94,6 +95,7 @@ first_block_transactions = [
             0: TxOut(amount=5000000000, address=consts.WALLET_PUBLIC),
             1: TxOut(amount=4000000000, address=consts.WALLET_PUBLIC),
         },
+        contract_id = str(uuid.uuid4())
     ),
     Transaction(
         version=1,
@@ -103,6 +105,7 @@ first_block_transactions = [
         fees=4000000000,
         vin={0: TxIn(payout=so, sig="", pub_key=consts.WALLET_PUBLIC)},
         vout={0: TxOut(amount=1000000000, address=consts.WALLET_PUBLIC)},
+        contract_id = str(uuid.uuid4())
     ),
 ]
 

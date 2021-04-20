@@ -6,7 +6,6 @@ wallets = [
     Wallet("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==", 81708545448566365192215824424812292395914953522816889332540536969877076629810),
     Wallet("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeAK405KpwnEaD9fPzdHpX9QU6I26ZbG7hOSwwJhyygyqxAYYPWpspGf+fVQvzPBEOMLLwPAdoTrGS4/f9Crl7Q==", 34542016620224333152874129924862569325547307593247243388499607616364786967537),
 ]
-genesis_receiver = wallets[0]
 
 contract_code = """
 function a(n) do
@@ -54,16 +53,19 @@ function main() do
     return val
 end
 """
+sender_wallet = wallets[0]
+receiver_wallet = wallets[1]
+  
 r = requests.post("http://localhost:9001/makeTransaction", json={
     'bounty': 1,
-    'sender_public_key': wallets[1].public_key,
-    'receiver_public_key': wallets[2].public_key,
-    'contract_code': contract_code
+    'sender_public_key': sender_wallet.public_key,
+    'receiver_public_key': receiver_wallet.public_key,
+    # 'contract_code': contract_code
 })
 tx_data = r.json()
 send_this = tx_data['send_this']
 sign_this = tx_data['sign_this']
-signed_string = wallets[1].sign(sign_this)
+signed_string = sender_wallet.sign(sign_this)
 data = {
     'transaction': send_this,
     'signature': signed_string

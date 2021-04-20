@@ -43,19 +43,31 @@ class Authority:
     def start_mining(self, mempool: Set[Transaction], chain: Chain, wallet: Wallet):
         if not self.is_mining():
             if is_my_turn(wallet):
-                interface = BlockchainVMInterface()
-                vjti_chain_relayer = VJTIChainRelayer(wallet)
-                if not vjti_chain_relayer.chain_is_ok(chain):
-                    logger.error("Miner: Chain is not trusted")
-                    return
                 if len(mempool) > consts.MINING_TRANSACTION_THRESHOLD or (
                     len(mempool) > 0
                     and abs(get_time_difference_from_now_secs(chain.header_list[-1].timestamp)) > consts.MINING_INTERVAL_THRESHOLD
                 ):
+                    interface = BlockchainVMInterface()
+                    vjti_chain_relayer = VJTIChainRelayer(wallet)
+                    if not vjti_chain_relayer.chain_is_ok(chain):
+                        logger.error("Miner: Chain is not trusted")
+                        return
+                    logger.debug("Miner: Chain is trusted")
                     local_utxo = copy.deepcopy(chain.utxo)
-                    mempool_copy = copy.deepcopy(mempool)
                     # Validating each transaction in block
-                    for tx in mempool_copy:
+                    for tx in [x for x in mempool]:
+                        # Remove the spent outputs
+                        for txIn in tx.vin.values():
+                            so = txIn.payout
+                            if so:
+                                if local_utxo.get(so)[0] is not None:
+                                    local_utxo.remove(so)
+                                else:
+                                    logger.error(f"Removed tx {tx} from mempool: Output {so} not in UTXO")
+                                    mempool.remove(tx)
+                            else:
+                                logger.error(f"Removed tx {tx} from mempool: txIn.payout does not exist")
+                                mempool.remove(tx)
                         if tx.contract_code != "":
                             try:
                                 output = interface.run_function(tx.contract_code, "main", [])
@@ -65,18 +77,9 @@ class Authority:
                                         txn.contract_output = output
                             except Exception as e:
                                 logger.error(f"Error while running code of contact: {tx.contract_id}: {e}")
+                                logger.error(f"Removed tx {tx} from mempool: Error while running contract code")
                                 mempool.remove(tx)
                                 continue
-                        # Remove the spent outputs
-                        for txIn in tx.vin.values():
-                            so = txIn.payout
-                            if so:
-                                if local_utxo.get(so)[0] is not None:
-                                    local_utxo.remove(so)
-                                else:
-                                    mempool.remove(tx)
-                            else:
-                                mempool.remove(tx)
                     self.p = Process(target=self.__mine, args=(mempool, chain, wallet))
                     self.p.start()
                     logger.debug("Miner: Started mining")
@@ -118,5 +121,5 @@ class Authority:
         requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/newblock", data=compress(block.to_json()))
         vjti_chain_relayer = VJTIChainRelayer(wallet)
         vjti_chain_relayer.new_block(block)
-        logger.info(f"Miner: Mined Block with {len(mlist)} transactions.")
+        logger.info(f"Miner: Mined Block with {len(mlist)} transaction(s)")
         return block

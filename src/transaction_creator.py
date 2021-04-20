@@ -1,6 +1,7 @@
 import copy
 import json
 from typing import Any, Dict
+import uuid
 
 import requests
 
@@ -35,6 +36,7 @@ if __name__ == "__main__":
         fees=4000000000,
         vin={0: TxIn(payout=so, sig="", pub_key=consts.WALLET_PUBLIC)},
         vout={0: TxOut(amount=1000000000, address=consts.WALLET_PUBLIC)},
+        contract_id = str(uuid.uuid4())
     )
 
     sign_copy_of_tx = copy.deepcopy(first_transaction)
