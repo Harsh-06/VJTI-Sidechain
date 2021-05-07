@@ -13,6 +13,7 @@ import waitress
 from bottle import BaseTemplate, Bottle, request, response, static_file, template, error
 
 import utils.constants as consts
+from utils.contract import get_contract_keys, is_valid_contract_address
 from core import Block, BlockChain, SingleOutput, Transaction, TxIn, TxOut, genesis_block
 from authority import Authority
 from utils.logger import logger, iplogger
@@ -182,7 +183,9 @@ def send_bounty(receiver_public_keys: List[str], amounts: List[int]):
     return False
 
 
-def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="") -> Transaction:
+def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="", contract_id=None) -> Transaction:
+    if contract_id is None:
+        contract_id = str(uuid.uuid4())
     vout = {}
     vin = {}
     current_amount = 0
@@ -203,7 +206,7 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_id = str(uuid.uuid4()))
+    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_id = contract_id)
 
 
 def get_ip(request):
@@ -235,6 +238,13 @@ def make_transaction():
     sender_public_key = data["sender_public_key"]
     contract_code = data.get("contract_code")
     contract_code = contract_code if contract_code is not None else ""
+    if contract_code != "":
+        contract_id, receiver_public_key = get_contract_keys()
+    else:
+        contract_id = str(uuid.uuid4())
+        if is_valid_contract_address(receiver_public_key):
+            response.status = 400
+            return "If there is no contract, the receiver public key should not be in contract address format"
     message = ""
     if "message" in data:
         message = data["message"]
@@ -255,7 +265,7 @@ def make_transaction():
         response.status = 400
         return "Cannot send money to youself"
     else:
-        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code)
+        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message, contract_code, contract_id)
         data = {}
         data["send_this"] = transaction.to_json()
         transaction.vin = {}

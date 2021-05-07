@@ -4,6 +4,7 @@ from datetime import datetime
 from multiprocessing import Process
 from sys import getsizeof
 from typing import List, Optional, Set
+from utils.contract import is_valid_contract_address
 
 import requests
 
@@ -70,11 +71,16 @@ class Authority:
                                 mempool.remove(tx)
                         if tx.contract_code != "":
                             try:
-                                output = interface.run_function(tx.contract_code, "main", [])
-                                logger.debug(f"Output of contract {tx.contract_id}: {output}")
-                                for txn in mempool:
-                                    if txn.contract_id == tx.contract_id:
-                                        txn.contract_output = output
+                                contract_address = tx.vout[0].address
+                                if not is_valid_contract_address(contract_address, tx.contract_code):
+                                    logger.error(f"Removed tx {tx} from mempool: tx receiver address is invalid contract address")
+                                    mempool.remove(tx)
+                                else:
+                                    output = interface.run_contract_code(tx.contract_code, contract_address)
+                                    logger.debug(f"Output of contract {tx.contract_id}: {output}")
+                                    for txn in mempool:
+                                        if txn.contract_id == tx.contract_id:
+                                            txn.contract_output = output
                             except Exception as e:
                                 logger.error(f"Error while running code of contact: {tx.contract_id}: {e}")
                                 logger.error(f"Removed tx {tx} from mempool: Error while running contract code")

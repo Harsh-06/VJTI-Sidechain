@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from fastecdsa import keys, curve, ecdsa
 
 import utils.constants as consts
@@ -12,8 +13,8 @@ class Wallet:
     private_key: str = None
     public_key: str = None
 
-    def __init__(self, pub_key=None, priv_key=None):
-        if pub_key is None or priv_key is None:
+    def __init__(self, pub_key: Optional[str] = None, priv_key: Optional[int] = None):
+        if priv_key is None:
             keys = get_wallet_from_db(PORT)
             if keys:
                 self.private_key, self.public_key = keys
@@ -24,6 +25,11 @@ class Wallet:
             logger.info("Wallet: Creating new Wallet")
             logger.info(self)
             add_wallet_to_db(PORT, self)
+        elif pub_key is None:
+            # generate public key
+            public_key = keys.get_public_key(priv_key, curve.P256)
+            self.public_key = encode_public_key(public_key)
+            self.private_key = priv_key
         else:
             self.public_key = pub_key
             self.private_key = priv_key

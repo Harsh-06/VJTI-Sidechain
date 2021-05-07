@@ -6,7 +6,6 @@ from core import BlockHeader, Block, Chain
 from wallet import Wallet
 import requests
 from utils.logger import logger
-from utils import constants
 
 class VJTIChainRelayer:
     def __init__(self, wallet: Wallet) -> None:
