@@ -119,8 +119,12 @@ class Authority:
         sign = wallet.sign(dhash(block_header))
         block_header.signature = sign
         block = Block(header=block_header, transactions=mlist)
-        requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/newblock", data=compress(block.to_json()))
-        vjti_chain_relayer = VJTIChainRelayer(wallet)
-        vjti_chain_relayer.new_block(block)
-        logger.info(f"Miner: Mined Block with {len(mlist)} transaction(s)")
-        return block
+        r = requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/newblock", data=compress(block.to_json()))
+        if r.text == "Block Received":
+            vjti_chain_relayer = VJTIChainRelayer(wallet)
+            vjti_chain_relayer.new_block(block)
+            logger.info(f"Miner: Mined Block with {len(mlist)} transaction(s)")
+            return block
+        else:
+            logger.info(f"Miner: Could not mine block with {len(mlist)} transaction(s)")
+            return None

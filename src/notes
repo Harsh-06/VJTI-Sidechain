@@ -22,9 +22,9 @@ We want to restrict txns having sender_address as any contract_pub_key format
 2. if is_contract: // check in newtransaction
     check if any other contract exists on same public_key. If yes, reject this contract
 ===
-Harsh -> VM update to allow address
+    Harsh -> VM update to allow address
 Harsh -> Illegal character should throw error
-Harsh -> What happens if read_contract_output, etc returns None
+    Harsh -> What happens if read_contract_output, etc returns None
 =
 1. Test out the existing things
 2. Integrate changes from "Temp Commit"

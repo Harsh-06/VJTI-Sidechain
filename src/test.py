@@ -23,13 +23,13 @@ end
 #   return val
 # end
 # """
-contract_code = """
-function main() do
-    params := [50];
-    val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==', 'a', params);
-    return val
-end
-"""
+# contract_code = """
+# function main() do
+#     params := [50];
+#     val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==', 'a', params);
+#     return val
+# end
+# """
 # contract_code = """
 # function a(n) do
 #   return n

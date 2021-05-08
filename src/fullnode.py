@@ -383,8 +383,8 @@ def process_new_block(request_data: bytes) -> str:
                 logger.debug("Server: Sending new block to peers")
                 # Broadcast block to other peers
                 send_to_all_peers("/newblock", request_data)
-
-            # TODO Make new chain/ orphan set for Block that is not added
+            else:
+                return "Block Received, but was not added, due to some error"
         except Exception as e:
             logger.error("Server: New Block: invalid block received " + str(e))
             return "Invalid Block Received"

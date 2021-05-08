@@ -519,7 +519,7 @@ class BlockChain:
             logger.error("Blockchain: Exception " + str(e))
 
     @lock(block_lock)
-    def add_block(self, block: Block):
+    def add_block(self, block: Block) -> bool:
         blockAdded = False
 
         chain = self.active_chain
