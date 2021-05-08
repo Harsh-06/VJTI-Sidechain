@@ -7,7 +7,7 @@ def decode_public_key(base64_key: str):
     return decode_key(raw_data)[1]
 
 
-def encode_public_key(pub_key_point):
+def encode_public_key(pub_key_point) -> str:
     encoded_key = encode_pub_key_point(pub_key_point)
     base64_key = "".join(encoded_key.split("\n")[1:-1])
     return base64_key

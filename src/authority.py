@@ -69,14 +69,15 @@ class Authority:
                                 logger.error(f"Removed tx {tx} from mempool: txIn.payout does not exist")
                                 mempool.remove(tx)
                         if tx.contract_code != "":
+                            contract_address = tx.get_contract_address()
                             try:
                                 output = interface.run_function(tx.contract_code, "main", [])
-                                logger.debug(f"Output of contract {tx.contract_id}: {output}")
+                                logger.debug(f"Output of contract {contract_address}: {output}")
                                 for txn in mempool:
-                                    if txn.contract_id == tx.contract_id:
+                                    if txn.get_contract_address() == contract_address:
                                         txn.contract_output = output
                             except Exception as e:
-                                logger.error(f"Error while running code of contact: {tx.contract_id}: {e}")
+                                logger.error(f"Error while running code of contact: {contract_address}: {e}")
                                 logger.error(f"Removed tx {tx} from mempool: Error while running contract code")
                                 mempool.remove(tx)
                                 continue

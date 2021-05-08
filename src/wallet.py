@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from fastecdsa import keys, curve, ecdsa
 
 import utils.constants as consts
@@ -12,18 +13,21 @@ class Wallet:
     private_key: str = None
     public_key: str = None
 
-    def __init__(self, pub_key=None, priv_key=None):
-        if pub_key is None or priv_key is None:
+    def __init__(self, pub_key: Optional[str] = None, priv_key: Optional[int] = None):
+        if priv_key is None:
             keys = get_wallet_from_db(PORT)
             if keys:
                 self.private_key, self.public_key = keys
                 logger.info("Wallet: Restoring Existing Wallet")
                 return
-
-            self.private_key, self.public_key = self.generate_address()
+            self.private_key = keys.gen_private_key(curve.P256)
+            self.public_key = self.gen_public_key(self.private_key)
             logger.info("Wallet: Creating new Wallet")
             logger.info(self)
             add_wallet_to_db(PORT, self)
+        elif pub_key is None:
+            self.private_key = priv_key
+            self.public_key = self.gen_public_key(priv_key)
         else:
             self.public_key = pub_key
             self.private_key = priv_key
@@ -31,9 +35,9 @@ class Wallet:
     def __repr__(self):
         return f"PubKey:\t{self.public_key}\nPrivKey:\t{self.private_key}"
 
-    def generate_address(self):
-        priv_key, pub_key_point = keys.gen_keypair(curve.P256)
-        return priv_key, encode_public_key(pub_key_point)
+    def gen_public_key(self, priv_key: int) -> str:
+        pub_key_point = keys.get_public_key(priv_key, curve.P256)
+        return encode_public_key(pub_key_point)
 
     def sign(self, transaction: str) -> str:
         r, s = ecdsa.sign(transaction, self.private_key, curve=curve.P256)

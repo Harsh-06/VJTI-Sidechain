@@ -8,7 +8,6 @@ from datetime import datetime
 import hashlib
 import inspect
 import requests
-import uuid
 import waitress
 from bottle import BaseTemplate, Bottle, request, response, static_file, template, error
 
@@ -203,7 +202,7 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_id = str(uuid.uuid4()))
+    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code)
 
 
 def get_ip(request):
@@ -405,27 +404,36 @@ def received_new_block():
 
 
 @lru_cache(maxsize=16)
-def get_tx_by_contract_id(request_data: bytes) -> Optional[Transaction]:
+def get_cc_co_by_contract_address(request_data: bytes) -> Tuple[str, str]:
     global BLOCKCHAIN
-    contract_id = decompress(request_data)
-    
-    header_list = read_header_list_from_db()
-    for header in header_list:
-        block = Block.from_json(get_block_from_db(header)).object()
-        for tx in block.transactions:
-            if tx.contract_id == contract_id:
-                return tx
-    return None
+    contract_address = decompress(request_data)
+
+    tx_history = BLOCKCHAIN.active_chain.transaction_history
+    txns = tx_history.get(contract_address)
+    if len(txns) == 0:
+        header_list = read_header_list_from_db()
+        for header in header_list:
+            block = Block.from_json(get_block_from_db(header)).object()
+            for tx in block.transactions:
+                if tx.get_contract_address() == contract_address:
+                    return tx.contract_code, tx.contract_output
+    else:
+        for tx in txns:
+            tx = json.loads(tx)
+            cc, co = tx.get('contract_code', ''), tx.get('contract_output', '')
+            if cc != '':
+                return cc, co
+    return '', ''
 
 
-@app.post("/get_tx")
+@app.post("/get_cc_co")
 def get_tx():
     log_ip(request, inspect.stack()[0][3])
-    tx = get_tx_by_contract_id(request.body.read())
-    if tx is None:
-        return None
-    else:
-        return tx.to_json()
+    cc, co = get_cc_co_by_contract_address(request.body.read())
+    return json.dumps({
+        'cc': cc,
+        'co': co,
+    })
 
 
 @lru_cache(maxsize=16)

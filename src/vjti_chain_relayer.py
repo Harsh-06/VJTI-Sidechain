@@ -6,7 +6,6 @@ from core import BlockHeader, Block, Chain
 from wallet import Wallet
 import requests
 from utils.logger import logger
-from utils import constants
 
 class VJTIChainRelayer:
     def __init__(self, wallet: Wallet) -> None:
@@ -26,7 +25,7 @@ class VJTIChainRelayer:
 
         for header in reversed(header_list):
             if header.height == 0:  # 0th block should be skipped
-                pass
+                continue
             if self.__should_exist(header):
                 waiting_time_secs = self.main_chain_mining_interval + 2  # 2 second extra
                 now_time_secs = int(time.time())

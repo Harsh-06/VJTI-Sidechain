@@ -84,8 +84,16 @@ class Transaction(DataClassJson):
     def __hash__(self):
         return int(dhash(self), 16)
 
-    def __eq__(self, other):
-        return self.contract_id != other.contract_id
+    def __eq__(self, other: 'Transaction'):
+        if self.contract_code != other.contract_code:
+            return False
+        for txin in self.vin.values():
+            if txin not in other.vin.values():
+                return False
+        for txout in self.vout.values():
+            if txout not in other.vout.values():
+                return False
+        return self.version == other.version and self.timestamp == other.timestamp and self.locktime == other.locktime
 
     def hash(self):
         return dhash(self)
@@ -96,6 +104,12 @@ class Transaction(DataClassJson):
         sig = w.sign(sign_copy_of_tx.to_json())
         for i in self.vin:
             self.vin[i].sig = sig
+
+    def get_1st_output_address(self):
+        return self.vout[0].address
+
+    def get_contract_address(self):
+        return self.get_1st_output_address()
 
     def add_sign(self, sig):
         for i in self.vin:
@@ -344,8 +358,8 @@ class Chain:
                 if so:
                     self.utxo.remove(so)
             # Add new unspent outputs
-            for touput in t.vout:
-                self.utxo.set(SingleOutput(txid=thash, vout=touput), t.vout[touput], block.header)
+            for toutput in t.vout:
+                self.utxo.set(SingleOutput(txid=thash, vout=toutput), t.vout[toutput], block.header)
 
     def is_transaction_valid(self, transaction: Transaction) -> Tuple[bool, str]:
         ok, msg = transaction.is_valid()
@@ -423,8 +437,8 @@ class Chain:
                         logger.error("Chain: No Single output, Transaction invalid")
                         return False
                 # Add new unspent outputs
-                for touput in t.vout:
-                    local_utxo.set(SingleOutput(txid=thash, vout=touput), t.vout[touput], block.header)
+                for toutput in t.vout:
+                    local_utxo.set(SingleOutput(txid=thash, vout=toutput), t.vout[toutput], block.header)
             else:
                 logger.debug("Chain: Transaction not valid - " + msg)
                 return False, msg
@@ -447,18 +461,18 @@ class Chain:
             self.length = len(self.header_list)
             add_block_to_db(block)
             for tx in block.transactions:
-                pub_key, data = tx.summarize()
-                for address in data:
-                    amount = data[address]
+                sender_pub_key, receiver_data = tx.summarize()
+                for receiver_address in receiver_data:
+                    amount = receiver_data[receiver_address]
                     timestamp = tx.timestamp
                     bhash = dhash(block.header)
                     thash = dhash(tx)
                     message = tx.message
-                    history = generate_tx_hist(amount, pub_key, timestamp, bhash, thash, message)
-                    self.transaction_history.append(address, history)
+                    history = generate_tx_hist(amount, sender_pub_key, timestamp, bhash, thash, message, tx.contract_code, tx.contract_output)
+                    self.transaction_history.append(receiver_address, history)
 
-                    history = generate_tx_hist(-amount, address, timestamp, bhash, thash, message)
-                    self.transaction_history.append(pub_key, history)
+                    history = generate_tx_hist(-amount, receiver_address, timestamp, bhash, thash, message)
+                    self.transaction_history.append(sender_pub_key, history)
 
             logger.info("Chain: Added Block " + str(block))
             return True
@@ -525,7 +539,6 @@ genesis_block_transaction = [
         locktime=0,
         timestamp=1551698572,
         message="Genesis Transaction",
-        contract_id="GenesisContractId",
         contract_code="",
         contract_output=None,
         vin={0: TxIn(payout=None, sig=consts.GENESIS_BLOCK_SIGNATURE, pub_key="Genesis")},

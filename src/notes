@@ -1,0 +1,31 @@
+contract_priv_key: int = F(contract_code)
+contract_pub_key = ecsda.key...(contract_priv_key)
+
+
+receiver_address should be contract_pub_key
+contract_priv_key_enc is stored as contract_id
+
+
+
+====
+We want to restrict txns having sender_address as any contract_pub_key format
+
+
+================
+1. contract_id -> private key
+2. contract receiver public_key -> public_key (of some format)
+
+
+1. whenever we receive a tx from user: // check in newtransaction
+    check if sender_address is a contract address (format)
+        if yes, reject it
+2. if is_contract: // check in newtransaction
+    check if any other contract exists on same public_key. If yes, reject this contract
+===
+Harsh -> VM update to allow address
+Harsh -> Illegal character should throw error
+Harsh -> What happens if read_contract_output, etc returns None
+=
+1. Test out the existing things
+2. Integrate changes from "Temp Commit"
+3. Upar ki cheezein
