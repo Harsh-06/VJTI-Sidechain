@@ -16,16 +16,16 @@ We want to restrict txns having sender_address as any contract_pub_key format
 2. contract receiver public_key -> public_key (of some format)
 
 
-1. whenever we receive a tx from user: // check in newtransaction
-    check if sender_address is a contract address (format)
-        if yes, reject it
-2. if is_contract: // check in newtransaction
-    check if any other contract exists on same public_key. If yes, reject this contract
+    1. whenever we receive a tx from user: // check in newtransaction
+        check if sender_address is a contract address (format)
+            if yes, reject it
+    2. if is_contract: // check in newtransaction
+        check if any other contract exists on same public_key. If yes, reject this contract
 ===
     Harsh -> VM update to allow address
-Harsh -> Illegal character should throw error
+    Harsh -> Illegal character should throw error
     Harsh -> What happens if read_contract_output, etc returns None
 =
-1. Test out the existing things
-2. Integrate changes from "Temp Commit"
-3. Upar ki cheezein
+    1. Test out the existing things
+    2. Integrate changes from "Temp Commit"
+    3. Upar ki cheezein

@@ -468,7 +468,7 @@ class Chain:
                     bhash = dhash(block.header)
                     thash = dhash(tx)
                     message = tx.message
-                    history = generate_tx_hist(amount, sender_pub_key, timestamp, bhash, thash, message, tx.contract_code, tx.contract_output)
+                    history = generate_tx_hist(amount, sender_pub_key, timestamp, bhash, thash, message, tx.contract_code, tx.contract_output, tx.contract_id)
                     self.transaction_history.append(receiver_address, history)
 
                     history = generate_tx_hist(-amount, receiver_address, timestamp, bhash, thash, message)

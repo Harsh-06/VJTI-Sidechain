@@ -17,6 +17,7 @@ from authority import Authority
 from utils.logger import logger, iplogger
 from utils.storage import get_block_from_db, get_wallet_from_db, read_header_list_from_db
 from utils.utils import compress, decompress, dhash
+from utils.contract import get_contract_keys, is_valid_contract_address
 from wallet import Wallet
 
 app = Bottle()
@@ -181,7 +182,7 @@ def send_bounty(receiver_public_keys: List[str], amounts: List[int]):
     return False
 
 
-def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="") -> Transaction:
+def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="", contract_id="") -> Transaction:
     vout = {}
     vin = {}
     current_amount = 0
@@ -202,7 +203,7 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code)
+    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_id=contract_id)
 
 
 def get_ip(request):
@@ -234,6 +235,13 @@ def make_transaction():
     sender_public_key = data["sender_public_key"]
     contract_code = data.get("contract_code")
     contract_code = contract_code if contract_code is not None else ""
+    contract_id = ""
+    if contract_code != "":
+        contract_id, receiver_public_key = get_contract_keys()
+    # else:
+    #     if is_valid_contract_address(receiver_public_key):
+    #         response.status = 400
+    #         return "If there is no contract, the receiver public key should not be in contract address format"
     message = ""
     if "message" in data:
         message = data["message"]
@@ -254,7 +262,7 @@ def make_transaction():
         response.status = 400
         return "Cannot send money to youself"
     else:
-        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code)
+        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code, contract_id=contract_id)
         data = {}
         data["send_this"] = transaction.to_json()
         transaction.vin = {}
@@ -404,9 +412,8 @@ def received_new_block():
 
 
 @lru_cache(maxsize=16)
-def get_cc_co_by_contract_address(request_data: bytes) -> Tuple[str, str]:
+def get_cc_co_ci_by_contract_address(contract_address: str) -> Tuple[str, str, str]:
     global BLOCKCHAIN
-    contract_address = decompress(request_data)
 
     tx_history = BLOCKCHAIN.active_chain.transaction_history
     txns = tx_history.get(contract_address)
@@ -416,23 +423,26 @@ def get_cc_co_by_contract_address(request_data: bytes) -> Tuple[str, str]:
             block = Block.from_json(get_block_from_db(header)).object()
             for tx in block.transactions:
                 if tx.get_contract_address() == contract_address:
-                    return tx.contract_code, tx.contract_output
+                    return tx.contract_code, tx.contract_output, tx.contract_id
     else:
         for tx in txns:
             tx = json.loads(tx)
-            cc, co = tx.get('contract_code', ''), tx.get('contract_output', '')
+            cc = tx.get('contract_code', '')
             if cc != '':
-                return cc, co
-    return '', ''
+                return cc, tx.get('contract_output', ''), tx.get('contract_id', '')
+    return '', '', ''
 
 
-@app.post("/get_cc_co")
+@app.post("/get_cc_co_ci")
 def get_tx():
     log_ip(request, inspect.stack()[0][3])
-    cc, co = get_cc_co_by_contract_address(request.body.read())
+    contract_address = request.body.read()
+    contract_address = decompress(contract_address)
+    cc, co, ci = get_cc_co_ci_by_contract_address(contract_address)
     return json.dumps({
         'cc': cc,
         'co': co,
+        'ci': ci,
     })
 
 
@@ -443,10 +453,20 @@ def process_new_transaction(request_data: bytes) -> Tuple[bool, str]:
     if transaction_json:
         try:
             tx = Transaction.from_json(transaction_json).object()
+            # Validations
+            for txIn in tx.vin.values():
+                if is_valid_contract_address(txIn.pub_key):
+                    return False, "Cannot send funds from a contract address"
+            if tx.contract_output is not None:
+                return False, "Contract Output should be None"
+            if tx.contract_code != "": # This is a contract
+                contract_address = tx.get_contract_address()
+                # Ensure that there is no other contract on this contract address
+                cc, _, _ = get_cc_co_ci_by_contract_address(contract_address)
+                if cc != "":
+                    return False, "There is already some other contract at this contract address"
             # Add transaction to Mempool
             if tx not in BLOCKCHAIN.mempool:
-                if tx.contract_output is not None:
-                    return False, "Contract Output should be None"
                 ok, msg = BLOCKCHAIN.active_chain.is_transaction_valid(tx)
                 if ok:
                     logger.debug("Valid Transaction received, Adding to Mempool")
@@ -469,11 +489,8 @@ def process_new_transaction(request_data: bytes) -> Tuple[bool, str]:
 @app.post("/newtransaction")
 def received_new_transaction():
     log_ip(request, inspect.stack()[0][3])
-    result, message = process_new_transaction(request.body.read())
-    if result:
-        response.status = 200
-    else:
-        response.status = 400
+    ok, message = process_new_transaction(request.body.read())
+    response.status = 200 if ok else 400
     return message
 
 

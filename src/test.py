@@ -17,19 +17,35 @@ function main() do
   return val
 end
 """
-# contract_code = """
-# function main() do
-#   val := read_contract_output('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==');
-#   return val
-# end
-# """
-# contract_code = """
-# function main() do
-#     params := [50];
-#     val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==', 'a', params);
-#     return val
-# end
-# """
+contract_code = """
+function main() do
+  val := read_contract_output('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAFVaMGLLT3Y58xK9TDmR//p1ZqWLDbSsy8aVNJsuMTYsx11XeNafnxG8cWZu6hznxkQdKo/gcTtDfU7TxVl/Rg==');
+  return val
+end
+"""
+contract_code = """
+function main() do
+    params := [50];
+    val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAFVaMGLLT3Y58xK9TDmR//p1ZqWLDbSsy8aVNJsuMTYsx11XeNafnxG8cWZu6hznxkQdKo/gcTtDfU7TxVl/Rg==', 'a', params);
+    return val
+end
+"""
+contract_code1 = """
+function pay(n) do
+    ok := send_amount('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAFVaMGLLT3Y58xK9TDmR//p1ZqWLDbSsy8aVNJsuMTYsx11XeNafnxG8cWZu6hznxkQdKo/gcTtDfU7TxVl/Rg==', n, 'TestTransfer');
+    return ok
+end;
+function main() do
+  return 1
+end
+"""
+contract_code2 = """
+function main() do
+    params := [2];
+    val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA40qoy4SEkDJ6PZjBYs8u4lCaoeCZu6glBscrRrho5SfP4+QcjpmyVHaNqR9ABhkTcNT2OM0iStWXexUOXZSJw==', 'pay', params);
+    return val
+end
+"""
 # contract_code = """
 # function a(n) do
 #   return n
@@ -54,13 +70,13 @@ end
 # end
 # """
 sender_wallet = wallets[0]
-receiver_wallet = wallets[2]
+receiver_wallet = wallets[1]
 
 r = requests.post("http://localhost:9001/makeTransaction", json={
-    'bounty': 1,
+    'bounty': 100,
     'sender_public_key': sender_wallet.public_key,
     'receiver_public_key': receiver_wallet.public_key,
-    'contract_code': contract_code
+    'contract_code': contract_code2
 })
 tx_data = r.json()
 send_this = tx_data['send_this']

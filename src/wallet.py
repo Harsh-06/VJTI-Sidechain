@@ -21,13 +21,13 @@ class Wallet:
                 logger.info("Wallet: Restoring Existing Wallet")
                 return
             self.private_key = keys.gen_private_key(curve.P256)
-            self.public_key = self.gen_public_key(self.private_key)
+            self.public_key = Wallet.gen_public_key(self.private_key)
             logger.info("Wallet: Creating new Wallet")
             logger.info(self)
             add_wallet_to_db(PORT, self)
         elif pub_key is None:
             self.private_key = priv_key
-            self.public_key = self.gen_public_key(priv_key)
+            self.public_key = Wallet.gen_public_key(priv_key)
         else:
             self.public_key = pub_key
             self.private_key = priv_key
@@ -35,7 +35,8 @@ class Wallet:
     def __repr__(self):
         return f"PubKey:\t{self.public_key}\nPrivKey:\t{self.private_key}"
 
-    def gen_public_key(self, priv_key: int) -> str:
+    @staticmethod
+    def gen_public_key(priv_key: int) -> str:
         pub_key_point = keys.get_public_key(priv_key, curve.P256)
         return encode_public_key(pub_key_point)
 

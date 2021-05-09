@@ -1,20 +1,19 @@
 import copy
 import time
 from datetime import datetime
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 from sys import getsizeof
-from typing import List, Optional, Set
-
+from typing import List, Optional, Set, Tuple
 import requests
 
 import utils.constants as consts
-from core import Block, BlockHeader, Chain, Transaction
+from core import Block, BlockHeader, Chain, Transaction, Utxo
 from utils.logger import logger
 from utils.utils import compress, dhash, merkle_hash, get_time_difference_from_now_secs
+from utils.contract import is_valid_contract_address
 from wallet import Wallet
 from vjti_chain_relayer import VJTIChainRelayer
 from blockchain_vm_interface import BlockchainVMInterface
-
 from authority_rules import authority_rules
 
 
@@ -40,6 +39,18 @@ class Authority:
                 self.p = None
         return False
 
+    def remove_utxo_of_tx(self, tx: Transaction, local_utxo: Utxo) -> Tuple[bool, str]:
+        for txIn in tx.vin.values():
+            so = txIn.payout
+            if so:
+                if local_utxo.get(so)[0] is not None:
+                    local_utxo.remove(so)
+                    return True, ""
+                else:
+                    return False, f"Output {so} not in UTXO"
+            else:
+                return False, "txIn.payout does not exist"
+
     def start_mining(self, mempool: Set[Transaction], chain: Chain, wallet: Wallet):
         if not self.is_mining():
             if is_my_turn(wallet):
@@ -47,40 +58,57 @@ class Authority:
                     len(mempool) > 0
                     and abs(get_time_difference_from_now_secs(chain.header_list[-1].timestamp)) > consts.MINING_INTERVAL_THRESHOLD
                 ):
-                    interface = BlockchainVMInterface()
                     vjti_chain_relayer = VJTIChainRelayer(wallet)
                     if not vjti_chain_relayer.chain_is_ok(chain):
                         logger.error("Miner: Chain is not trusted")
                         return
                     logger.debug("Miner: Chain is trusted")
                     local_utxo = copy.deepcopy(chain.utxo)
-                    # Validating each transaction in block
-                    for tx in [x for x in mempool]:
-                        # Remove the spent outputs
-                        for txIn in tx.vin.values():
-                            so = txIn.payout
-                            if so:
-                                if local_utxo.get(so)[0] is not None:
-                                    local_utxo.remove(so)
-                                else:
-                                    logger.error(f"Removed tx {tx} from mempool: Output {so} not in UTXO")
-                                    mempool.remove(tx)
+
+                    manager = Manager()
+                    mempool_list = manager.list()
+                    for tx in mempool:
+                        mempool_list.append(tx)
+
+                    def add_contract_tx_to_mempool(transaction) -> bool:
+                        if transaction in mempool_list:
+                            logger.debug(f"Tx {transaction} already exists in mempool")
+                            return True
+                        else:
+                            ok, error_msg = self.remove_utxo_of_tx(transaction, local_utxo)
+                            if ok:
+                                mempool_list.append(transaction)
+                                logger.info(f"Added tx {transaction} to mempool")
+                                return True
                             else:
-                                logger.error(f"Removed tx {tx} from mempool: txIn.payout does not exist")
-                                mempool.remove(tx)
+                                logger.error(f"Not adding contract tx {transaction} to mempool: {error_msg}")
+                                return False
+
+                    interface = BlockchainVMInterface(add_contract_tx_to_mempool)
+                    for tx in [x for x in mempool_list]:
+                        ok, error_msg = self.remove_utxo_of_tx(tx, local_utxo)
+                        if not ok:
+                            logger.error(f"Removing tx {tx} from mempool: {error_msg}")
+                            mempool_list.remove(tx)
+                            continue
+
                         if tx.contract_code != "":
                             contract_address = tx.get_contract_address()
-                            try:
-                                output = interface.run_function(tx.contract_code, "main", [])
-                                logger.debug(f"Output of contract {contract_address}: {output}")
-                                for txn in mempool:
-                                    if txn.get_contract_address() == contract_address:
-                                        txn.contract_output = output
-                            except Exception as e:
-                                logger.error(f"Error while running code of contact: {contract_address}: {e}")
-                                logger.error(f"Removed tx {tx} from mempool: Error while running contract code")
-                                mempool.remove(tx)
-                                continue
+                            if not is_valid_contract_address(contract_address):
+                                logger.error(f"Removed tx {tx} from mempool: tx receiver address is invalid contract address")
+                                mempool_list.remove(tx)
+                            else:
+                                try:
+                                    output = interface.run_contract_code(tx.contract_code, tx.contract_id)
+                                    logger.debug(f"Output of contract {contract_address}: {output}")
+                                    for txn in mempool_list:
+                                        if txn.get_contract_address() == contract_address:
+                                            txn.contract_output = output
+                                except Exception as e:
+                                    logger.error(f"Error while running code of contact: {contract_address}: {e}")
+                                    logger.error(f"Removed tx {tx} from mempool: Error while running contract code")
+                                    mempool_list.remove(tx)
+                    mempool = set(mempool_list)
                     self.p = Process(target=self.__mine, args=(mempool, chain, wallet))
                     self.p.start()
                     logger.debug("Miner: Started mining")
