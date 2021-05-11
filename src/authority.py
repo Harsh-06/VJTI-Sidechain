@@ -59,7 +59,7 @@ class Authority:
                     and abs(get_time_difference_from_now_secs(chain.header_list[-1].timestamp)) > consts.MINING_INTERVAL_THRESHOLD
                 ):
                     vjti_chain_relayer = VJTIChainRelayer(wallet)
-                    if not vjti_chain_relayer.chain_is_ok(chain):
+                    if not vjti_chain_relayer.chain_is_trusted(chain):
                         logger.error("Miner: Chain is not trusted")
                         return
                     logger.debug("Miner: Chain is trusted")

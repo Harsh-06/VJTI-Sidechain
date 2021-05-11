@@ -20,7 +20,7 @@ class VJTIChainRelayer:
         self.record_account_public_key = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQdVp4AtzeMCty3w7x/s0HFejuv2KbiEn3KEEc9wd4RC6iVdjgSuHwbp1trJJBjqdgk6gyp7lg8vtmP17Dbce4Q=='
         # The public key of the account, to which all transactions will be sent
 
-    def chain_is_ok(self, chain: Chain) -> bool:
+    def chain_is_trusted(self, chain: Chain) -> bool:
         header_list = chain.header_list
 
         for header in reversed(header_list):
