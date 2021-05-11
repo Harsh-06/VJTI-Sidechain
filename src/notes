@@ -3,7 +3,7 @@ contract_pub_key = ecsda.key...(contract_priv_key)
 
 
 receiver_address should be contract_pub_key
-contract_priv_key_enc is stored as contract_id
+contract_priv_key_enc is stored as contract_priv_key
 
 
 
@@ -12,7 +12,7 @@ We want to restrict txns having sender_address as any contract_pub_key format
 
 
 ================
-1. contract_id -> private key
+1. contract_priv_key -> private key
 2. contract receiver public_key -> public_key (of some format)
 
 

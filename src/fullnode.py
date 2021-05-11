@@ -182,7 +182,7 @@ def send_bounty(receiver_public_keys: List[str], amounts: List[int]):
     return False
 
 
-def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="", contract_id="") -> Transaction:
+def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="", contract_priv_key="") -> Transaction:
     vout = {}
     vin = {}
     current_amount = 0
@@ -203,7 +203,7 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_id=contract_id)
+    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_priv_key=contract_priv_key)
 
 
 def get_ip(request):
@@ -235,9 +235,9 @@ def make_transaction():
     sender_public_key = data["sender_public_key"]
     contract_code = data.get("contract_code")
     contract_code = contract_code if contract_code is not None else ""
-    contract_id = ""
+    contract_priv_key = ""
     if contract_code != "":
-        contract_id, receiver_public_key = get_contract_keys()
+        contract_priv_key, receiver_public_key = get_contract_keys()
     # else:
     #     if is_valid_contract_address(receiver_public_key):
     #         response.status = 400
@@ -262,7 +262,7 @@ def make_transaction():
         response.status = 400
         return "Cannot send money to youself"
     else:
-        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code, contract_id=contract_id)
+        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code, contract_priv_key=contract_priv_key)
         data = {}
         data["send_this"] = transaction.to_json()
         transaction.vin = {}
@@ -411,8 +411,8 @@ def received_new_block():
     return process_new_block(request.body.read())
 
 
-@lru_cache(maxsize=16)
-def get_cc_co_ci_by_contract_address(contract_address: str) -> Tuple[str, str, str]:
+# @lru_cache(maxsize=16) # DO NOT CACHE
+def get_cc_co_cp_by_contract_address(contract_address: str) -> Tuple[str, str, str]:
     global BLOCKCHAIN
 
     tx_history = BLOCKCHAIN.active_chain.transaction_history
@@ -423,26 +423,26 @@ def get_cc_co_ci_by_contract_address(contract_address: str) -> Tuple[str, str, s
             block = Block.from_json(get_block_from_db(header)).object()
             for tx in block.transactions:
                 if tx.get_contract_address() == contract_address:
-                    return tx.contract_code, tx.contract_output, tx.contract_id
+                    return tx.contract_code, tx.contract_output, tx.contract_priv_key
     else:
         for tx in txns:
             tx = json.loads(tx)
             cc = tx.get('contract_code', '')
             if cc != '':
-                return cc, tx.get('contract_output', ''), tx.get('contract_id', '')
+                return cc, tx.get('contract_output', ''), tx.get('contract_priv_key', '')
     return '', '', ''
 
 
-@app.post("/get_cc_co_ci")
+@app.post("/get_cc_co_cp")
 def get_tx():
     log_ip(request, inspect.stack()[0][3])
     contract_address = request.body.read()
     contract_address = decompress(contract_address)
-    cc, co, ci = get_cc_co_ci_by_contract_address(contract_address)
+    cc, co, cp = get_cc_co_cp_by_contract_address(contract_address)
     return json.dumps({
         'cc': cc,
         'co': co,
-        'ci': ci,
+        'cp': cp,
     })
 
 
@@ -462,7 +462,7 @@ def process_new_transaction(request_data: bytes) -> Tuple[bool, str]:
             if tx.contract_code != "": # This is a contract
                 contract_address = tx.get_contract_address()
                 # Ensure that there is no other contract on this contract address
-                cc, _, _ = get_cc_co_ci_by_contract_address(contract_address)
+                cc, _, _ = get_cc_co_cp_by_contract_address(contract_address)
                 if cc != "":
                     return False, "There is already some other contract at this contract address"
             # Add transaction to Mempool

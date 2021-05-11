@@ -67,8 +67,6 @@ class Authority:
 
                     manager = Manager()
                     mempool_list = manager.list()
-                    for tx in mempool:
-                        mempool_list.append(tx)
 
                     def add_contract_tx_to_mempool(transaction) -> bool:
                         if transaction in mempool_list:
@@ -85,30 +83,31 @@ class Authority:
                                 return False
 
                     interface = BlockchainVMInterface(add_contract_tx_to_mempool)
-                    for tx in [x for x in mempool_list]:
+                    for tx in [x for x in mempool]:
                         ok, error_msg = self.remove_utxo_of_tx(tx, local_utxo)
                         if not ok:
                             logger.error(f"Removing tx {tx} from mempool: {error_msg}")
-                            mempool_list.remove(tx)
+                            mempool.remove(tx)
                             continue
 
                         if tx.contract_code != "":
                             contract_address = tx.get_contract_address()
                             if not is_valid_contract_address(contract_address):
                                 logger.error(f"Removed tx {tx} from mempool: tx receiver address is invalid contract address")
-                                mempool_list.remove(tx)
+                                mempool.remove(tx)
                             else:
                                 try:
-                                    output = interface.run_contract_code(tx.contract_code, tx.contract_id)
+                                    output = interface.run_contract_code(tx.contract_code, tx.contract_priv_key)
                                     logger.debug(f"Output of contract {contract_address}: {output}")
-                                    for txn in mempool_list:
+                                    for txn in mempool:
                                         if txn.get_contract_address() == contract_address:
                                             txn.contract_output = output
+                                            break
                                 except Exception as e:
                                     logger.error(f"Error while running code of contact: {contract_address}: {e}")
                                     logger.error(f"Removed tx {tx} from mempool: Error while running contract code")
-                                    mempool_list.remove(tx)
-                    mempool = set(mempool_list)
+                                    mempool.remove(tx)
+                    mempool = mempool.union(mempool_list)
                     self.p = Process(target=self.__mine, args=(mempool, chain, wallet))
                     self.p.start()
                     logger.debug("Miner: Started mining")

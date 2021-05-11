@@ -8,31 +8,34 @@ wallets = [
 ]
 
 contract_code = """
-function a(n) do
-  b := n + 1;
-  return b
+function increment(n) do
+    b := n + 1;
+    return b
 end;
 function main() do
-  val := a(5);
-  return val
+    val := increment(5);
+    return val
 end
 """
 contract_code = """
 function main() do
-  val := read_contract_output('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAFVaMGLLT3Y58xK9TDmR//p1ZqWLDbSsy8aVNJsuMTYsx11XeNafnxG8cWZu6hznxkQdKo/gcTtDfU7TxVl/Rg==');
-  return val
+    contract_address := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA6DNFDFe95t5kSf2yv3BT1I0jatbW/BsH8cQbEQnhcKNGvjQwvWj9ctcrhHjatJn9iB5eBYqrRutrlwB417xbA==';
+    val := read_contract_output(contract_address);
+    return val
 end
 """
 contract_code = """
 function main() do
     params := [50];
-    val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAFVaMGLLT3Y58xK9TDmR//p1ZqWLDbSsy8aVNJsuMTYsx11XeNafnxG8cWZu6hznxkQdKo/gcTtDfU7TxVl/Rg==', 'a', params);
+    contract_address := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA6DNFDFe95t5kSf2yv3BT1I0jatbW/BsH8cQbEQnhcKNGvjQwvWj9ctcrhHjatJn9iB5eBYqrRutrlwB417xbA==';
+    val := call_contract_function(contract_address, 'increment', params);
     return val
 end
 """
 contract_code1 = """
 function pay(n) do
-    ok := send_amount('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAFVaMGLLT3Y58xK9TDmR//p1ZqWLDbSsy8aVNJsuMTYsx11XeNafnxG8cWZu6hznxkQdKo/gcTtDfU7TxVl/Rg==', n, 'TestTransfer');
+    receiving_account_pub_key := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==';
+    ok := send_amount(receiving_account_pub_key, n, 'Transfer From Contract');
     return ok
 end;
 function main() do
@@ -41,42 +44,27 @@ end
 """
 contract_code2 = """
 function main() do
-    params := [2];
-    val := call_contract_function('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA40qoy4SEkDJ6PZjBYs8u4lCaoeCZu6glBscrRrho5SfP4+QcjpmyVHaNqR9ABhkTcNT2OM0iStWXexUOXZSJw==', 'pay', params);
+    params := [11];
+    send_amount_contract_address := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAmv36krj5R9YpHjh2Z/wV7CnIFQMbHsYS1Hbu70PIoapFVzQcq2wloHsL2Z3W7ar1X43mwFCPAo4xUA1pV+KwQ==';
+    val := call_contract_function(send_amount_contract_address, 'pay', params);
     return val
 end
 """
-# contract_code = """
-# function a(n) do
-#   return n
-# end;
-# function main() do
-#   val := a('abcd');
-#   return val
-# end
-# """
-# contract_code = """
-# function main() do
-#     params := ['def'];
-#     val := call_contract_function('e4032ece-9b7f-4813-b2c4-df9836837c19', 'a', params);
-#     return val
-# end
-# """
-# contract_code = """
-# function main() do
-#     params := [5.5];
-#     val := call_contract_function('e4032ece-9b7f-4813-b2c4-df9836837c19', 'a', params);
-#     return val
-# end
-# """
-sender_wallet = wallets[0]
-receiver_wallet = wallets[1]
+sender_wallet = wallets[1]
+receiver_wallet = wallets[2]
 
 r = requests.post("http://localhost:9001/makeTransaction", json={
-    'bounty': 100,
+    'bounty': 1,
     'sender_public_key': sender_wallet.public_key,
     'receiver_public_key': receiver_wallet.public_key,
-    'contract_code': contract_code2
+    'contract_code': contract_code2,
+    # 'message': 'Amount Transfer',
+    # 'message': 'Simple Contract',
+    # 'message': 'Contract Reading Another Contract\'s Output',
+    # 'message': 'Contract Calling Another Contract\'s Function',
+    # 'message': 'Contract Having send_amount',
+    # 'message': 'Amount Transfer To Contract',
+    'message': 'Triggering send_amount of A Contract',
 })
 tx_data = r.json()
 send_this = tx_data['send_this']
