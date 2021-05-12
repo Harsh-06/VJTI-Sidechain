@@ -13,14 +13,13 @@ from vvm.VM import VM
 def get_cc_co_cp_by_contract_address(contract_address: str) -> Tuple[str, str, str]:
     r = requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/get_cc_co_cp", data=compress(contract_address))
     data = r.json()
-    print('DATAAA', contract_address, data)
     return data.get('cc', ''), data.get('co', ''), data.get('cp', '')
 
 class BlockchainVMInterface:
     def __init__(self, add_contract_tx_to_mempool) -> None:
         self.vm = VM(self.read_contract_output, self.call_contract_function, self.send_amount)
         self.add_contract_tx_to_mempool = add_contract_tx_to_mempool
-        self.current_contract_id: Optional[str] = None
+        self.current_contract_priv_key: Optional[str] = None
 
     def read_contract_output(self, contract_address: str) -> Optional[str]:
         if not is_valid_contract_address(contract_address):
@@ -38,7 +37,7 @@ class BlockchainVMInterface:
             return self.__run_function(cc, function_name, params, cp)
 
     def send_amount(self, receiver_address: str, amount: int, message: Optional[str]) -> bool:
-        contract_private_key = int(self.current_contract_id)
+        contract_private_key = int(self.current_contract_priv_key)
         contract_wallet = Wallet(pub_key=None, priv_key=contract_private_key)
         data = {
             'bounty': amount,
@@ -57,10 +56,10 @@ class BlockchainVMInterface:
         return self.add_contract_tx_to_mempool(transaction)
 
     def __run_function(self, code: str, function_name: str, params: List[Any], contract_priv_key: str) -> Optional[str]:
-        old_current_contract_id = self.current_contract_id
-        self.current_contract_id = contract_priv_key
+        old_current_contract_priv_key = self.current_contract_priv_key
+        self.current_contract_priv_key = contract_priv_key
         output = self.vm.run_function(code, function_name, params)
-        self.current_contract_id = old_current_contract_id
+        self.current_contract_priv_key = old_current_contract_priv_key
         return output
 
     def run_contract_code(self, contract_code: str, contract_priv_key: str) -> Optional[str]:
