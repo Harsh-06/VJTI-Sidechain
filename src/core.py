@@ -161,8 +161,13 @@ class Transaction(DataClassJson):
 
         # Limit Message size
         if len(self.message) > consts.MAX_MESSAGE_SIZE:
-            logger.debug("Transaction: Message exceeds allowed length")
-            return False, "Transaction: Message exceeds allowed length"
+            logger.debug(f"Transaction: Message exceeds allowed length: {consts.MAX_MESSAGE_SIZE} characters")
+            return False, f"Transaction: Message exceeds allowed length: {consts.MAX_MESSAGE_SIZE} characters"
+
+        # Limit Data size
+        if len(self.data) > consts.MAX_DATA_SIZE:
+            logger.debug(f"Transaction: Data exceeds allowed length: {consts.MAX_DATA_SIZE} characters")
+            return False, f"Transaction: Data exceeds allowed length: {consts.MAX_DATA_SIZE} characters"
         return True, ""
 
     def object(self):
@@ -209,6 +214,8 @@ class Transaction(DataClassJson):
     contract_priv_key: str = ""
     contract_code: str = ""
     contract_output: Optional[str] = None
+
+    data: str = ""
 
 @dataclass
 class BlockHeader(DataClassJson):

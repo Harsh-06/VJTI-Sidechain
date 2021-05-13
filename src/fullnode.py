@@ -182,7 +182,7 @@ def send_bounty(receiver_public_keys: List[str], amounts: List[int]):
     return False
 
 
-def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="", contract_priv_key="") -> Transaction:
+def create_transaction(receiver_public_keys: List[str], amounts: List[int], sender_public_key, message="", contract_code="", contract_priv_key="", data_str="") -> Transaction:
     vout = {}
     vin = {}
     current_amount = 0
@@ -203,7 +203,7 @@ def create_transaction(receiver_public_keys: List[str], amounts: List[int], send
     if change > 0:
         vout[i + 1] = TxOut(amount=change, address=sender_public_key)
 
-    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_priv_key=contract_priv_key)
+    return Transaction(version=consts.MINER_VERSION, locktime=0, timestamp=int(time.time()), vin=vin, vout=vout, message=message, contract_code=contract_code, contract_priv_key=contract_priv_key, data=data_str)
 
 
 def get_ip(request):
@@ -245,6 +245,9 @@ def make_transaction():
     message = ""
     if "message" in data:
         message = data["message"]
+    data_str = ""
+    if "data" in data:
+        data_str = str(data["data"])
 
     if len(receiver_public_key) < consts.PUBLIC_KEY_LENGTH:
         logger.debug("Invalid Receiver Public Key")
@@ -262,7 +265,7 @@ def make_transaction():
         response.status = 400
         return "Cannot send money to youself"
     else:
-        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code, contract_priv_key=contract_priv_key)
+        transaction = create_transaction([receiver_public_key], [bounty], sender_public_key, message=message, contract_code=contract_code, contract_priv_key=contract_priv_key, data_str=data_str)
         data = {}
         data["send_this"] = transaction.to_json()
         transaction.vin = {}
@@ -419,7 +422,7 @@ def get_cc_co_cp_by_contract_address(contract_address: str) -> Tuple[str, str, s
     txns = tx_history.get(contract_address)
     if len(txns) == 0:
         header_list = read_header_list_from_db()
-        for header in header_list:
+        for header in reversed(header_list):
             block = Block.from_json(get_block_from_db(header)).object()
             for tx in block.transactions:
                 if tx.get_contract_address() == contract_address:

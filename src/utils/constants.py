@@ -25,6 +25,8 @@ PUBLIC_KEY_LENGTH = 124  # Length of Armoured Public Key
 
 MAX_MESSAGE_SIZE = 128  # Maximum Message Length for each Transaction
 
+MAX_DATA_SIZE = 1024  # Maximum Data Length for each Transaction
+
 MAX_BLOCK_SIZE_KB = 4096
 MAX_COINS_POSSIBLE = 10000000 * 10
 

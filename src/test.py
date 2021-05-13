@@ -50,21 +50,22 @@ function main() do
     return val
 end
 """
-sender_wallet = wallets[1]
-receiver_wallet = wallets[2]
+sender_wallet = wallets[0]
+receiver_wallet = wallets[1]
 
 r = requests.post("http://localhost:9001/makeTransaction", json={
     'bounty': 1,
     'sender_public_key': sender_wallet.public_key,
     'receiver_public_key': receiver_wallet.public_key,
-    'contract_code': contract_code2,
+    'contract_code': contract_code,
     # 'message': 'Amount Transfer',
     # 'message': 'Simple Contract',
     # 'message': 'Contract Reading Another Contract\'s Output',
     # 'message': 'Contract Calling Another Contract\'s Function',
     # 'message': 'Contract Having send_amount',
     # 'message': 'Amount Transfer To Contract',
-    'message': 'Triggering send_amount of A Contract',
+    'message': 'Data Transaction',
+    # 'data': 'Hello, this is some test data' * 100
 })
 tx_data = r.json()
 send_this = tx_data['send_this']
