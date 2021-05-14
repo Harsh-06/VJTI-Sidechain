@@ -124,8 +124,8 @@ class Transaction(DataClassJson):
 
         for i in self.vout:
             address = self.vout[i].address
-            if address == pub_key:
-                continue
+            # if address == pub_key:
+            #     continue
             if address not in receivers:
                 receivers[address] = 0
             receivers[address] += self.vout[i].amount      
