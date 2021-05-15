@@ -20,6 +20,9 @@ function increment(n) do
     b := n + 1;
     return b
 end;
+function update(n) do
+    return update_contract_output('55')
+end;
 function main() do
     val := increment(5);
     return val
@@ -58,16 +61,55 @@ function main() do
     return val
 end
 """
+contract_code3 = """
+function main() do
+    params := ['1'];
+    contract_address := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAT7C1tcjU1GnZnQd+x+EKE341EaaYaxdxEqeEyiGl848fIHlMHNTl+qzuB3OxNuvVSicPXTUKCt7n4b0nx+X/w==';
+    val := call_contract_function(contract_address, 'update', params);
+    return val
+end
+"""
+election_contract = """
+function vote(candidate) do
+    m := read_contract_output('self');
+    m := string_to_map(m);
+    if map_has(m, candidate) then
+        m[candidate] := m[candidate] + 1;
+        temp := update_contract_output(m);
+        return 1
+    else
+        return 0
+    end
+end;
+function main() do
+    m := {};
+    m['A'] := 0;
+    m['B'] := 0;
+    return m
+end
+"""
+vote_code = """
+function main() do
+    params := ['B'];
+    contract_address := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAHUWQZglWhEJHF1CS3bRJLWsR97UKU4pBSR150H0EzZSAC2yMpsDhchOnZH+7B8V2fyeoOa10pjPcxTA2B0oYQ==';
+    val := call_contract_function(contract_address, 'vote', params);
+    return val
+end
+"""
+
 sender_wallet = wallets[1]
-receiver_wallet = wallets[2]
+receiver_wallet = wallets[0]
 
 r = requests.post("http://localhost:9001/makeTransaction", json={
     'bounty': 1,
     'sender_public_key': sender_wallet.public_key,
     'receiver_public_key': receiver_wallet.public_key,
-    # 'contract_code': contract_code1,
-    'message': 'Amount Transfer',
-    # 'message': 'Simple Contract',
+    # 'contract_code': election_contract,
+    # 'contract_code': vote_code,
+    # 'message': 'Amount Transfer',
+    # 'message': 'Election Contract',
+    'message': 'Report Cards',
+    'data': 'The IPFS hash of the latest report cards data is: QmSZuhtf7jQgdXvuwe6PBrrk6U1zkWTmBLGfX4Lxd727Mz',
     # 'message': 'Contract Reading Another Contract\'s Output',
     # 'message': 'Contract Calling Another Contract\'s Function',
     # 'message': 'Contract Having send_amount',

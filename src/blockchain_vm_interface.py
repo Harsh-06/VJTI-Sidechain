@@ -1,3 +1,5 @@
+import json
+import time
 from core import Transaction
 from typing import Optional, List, Any, Tuple
 import requests
@@ -17,15 +19,20 @@ def get_cc_co_cp_by_contract_address(contract_address: str) -> Tuple[str, str, s
 
 class BlockchainVMInterface:
     def __init__(self, add_contract_tx_to_mempool) -> None:
-        self.vm = VM(self.read_contract_output, self.call_contract_function, self.send_amount)
+        self.vm = VM(self.read_contract_output, self.call_contract_function, self.send_amount, self.update_contract_output)
         self.add_contract_tx_to_mempool = add_contract_tx_to_mempool
         self.current_contract_priv_key: Optional[str] = None
 
     def read_contract_output(self, contract_address: str) -> Optional[str]:
+        if contract_address.lower() == 'self':
+            contract_address = Wallet.gen_public_key(int(self.current_contract_priv_key))
         if not is_valid_contract_address(contract_address):
             raise Exception(f"Contract Address {contract_address} is invalid contract address")
         _, co, _ = get_cc_co_cp_by_contract_address(contract_address)
-        return co if co != '' else None
+        co = str(co)
+        co = co.replace("'", "\\'") if co != '' else None
+        logger.debug(f"Read output of contract {contract_address}: {co}")
+        return co
 
     def call_contract_function(self, contract_address: str, function_name: str, params: List[Any]) -> Optional[str]:
         if not is_valid_contract_address(contract_address):
@@ -47,10 +54,55 @@ class BlockchainVMInterface:
         }
         r = requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/makeTransaction", json=data)
         tx_data = r.json()
-        logger.debug(f"BlockchainVmInterface: Make Transaction returned: {tx_data}")
+        logger.debug(f"BlockchainVmInterface: send_amount - Make Transaction returned: {tx_data}")
 
         transaction = Transaction.from_json(tx_data['send_this']).object()
         signed_string = contract_wallet.sign(tx_data['sign_this'])
+        transaction.add_sign(signed_string)
+
+        return self.add_contract_tx_to_mempool(transaction)
+
+    def update_contract_output(self, output: str) -> bool:
+        contract_private_key = int(self.current_contract_priv_key)
+        contract_wallet = Wallet(pub_key=None, priv_key=contract_private_key)
+        contract_address = contract_wallet.public_key
+        cc, _, cp = get_cc_co_cp_by_contract_address(contract_address)
+        if cp != str(contract_private_key):
+            # We should panic
+            logger.error(f"Contract private keys do not match for address {contract_address}")
+            return False
+        if cc == '':
+            logger.error(f"Contract code is empty for address {contract_address}")
+            return False
+        cpub = contract_address
+
+        data = {
+            'bounty': 1,
+            'sender_public_key': contract_wallet.public_key,
+            'receiver_public_key': 'AAAAA' + cpub[5:], # Some random address
+            'message': "Updated output of the tx", # Possibly add the prev tx_hash here
+            'contract_code': cc
+        }
+        r = requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/makeTransaction", json=data)
+        logger.debug(f"BlockchainVmInterface: update_contract_output - Make Transaction returned: {r.text}")
+        res = r.json()['send_this']
+        tx_data = json.loads(res)
+
+        tx_data['contract_output'] = output
+        tx_data['contract_priv_key'] = cp
+        tx_data['data'] = "" # Leaving it empty
+        tx_data['timestamp'] = int(time.time())
+        for num in tx_data['vout']:
+            tx_data['vout'][num]["address"] = cpub
+
+        transaction = Transaction.from_json(json.dumps(tx_data)).object()
+        tx_vin = transaction.vin
+        transaction.vin = {}
+        transaction.contract_output = None
+        tx_json_to_sign = transaction.to_json()
+        signed_string = contract_wallet.sign(tx_json_to_sign)
+        transaction.vin = tx_vin
+        transaction.contract_output = output
         transaction.add_sign(signed_string)
 
         return self.add_contract_tx_to_mempool(transaction)

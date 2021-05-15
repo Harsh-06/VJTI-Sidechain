@@ -109,63 +109,6 @@ class Authority:
                                     logger.error(f"Error while running code of contact: {contract_address}: {e}")
                                     logger.error(f"Removed tx {tx} from mempool: Error while running contract code")
                                     mempool.remove(tx)
-                    # TESTING
-                    cp = "2992551787683053261864120483756938861868390445414845609514417912417175908514"
-                    cpub = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA07Yj3oMO08TEt93M43FTJp3CceM1SnftlO1Uv+SYtxB5fWTtbEhb4VI2z8cwPWNzXED3E2Rz/anXNHXs9Q8AA=="
-                    cm = "Contract Having send_amount"
-                    cc = """
-function pay(n) do
-receiving_account_pub_key := 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOs9nZhvCnySWEmu9MvwVW+t3nM5T2QEsgcekpb1nQoO4au2XTGPMJf4xI2sBKEF1ToreBK6amX6z35CFQVO+gw==';
-ok := send_amount(receiving_account_pub_key, n, 'Transfer From Contract');
-return ok
-end;
-function main() do
-return 1
-end
-"""
-                    cdata = ""
-                    co = 500
-                    timestamp = int(time.time())
-                    contract_wallet = Wallet(pub_key=cpub, priv_key=int(cp))
-
-                    data = {
-                        'bounty': 1,
-                        'sender_public_key': contract_wallet.public_key,
-                        'receiver_public_key': 'AAAAA' + cpub[5:],
-                        'message': cm,
-                        'contract_code': cc
-                    }
-                    r = requests.post("http://0.0.0.0:" + str(consts.MINER_SERVER_PORT) + "/makeTransaction", json=data)
-                    logger.debug(f"Authority: Make Transaction returned: {r.text}")
-                    res = r.json()
-                    pprint(res['sign_this'])
-                    res = res['send_this']
-                    tx_data = json.loads(res)
-                    pprint(tx_data)
-
-                    tx_data['contract_output'] = co
-                    tx_data['contract_priv_key'] = cp
-                    tx_data['data'] = cdata
-                    tx_data['timestamp'] = timestamp
-                    for num in tx_data['vout']:
-                        tx_data['vout'][num]["address"] = cpub
-
-                    transaction = Transaction.from_json(json.dumps(tx_data)).object()
-                    pprint(transaction)
-                    tx_vin = transaction.vin
-                    transaction.vin = {}
-                    transaction.contract_output = None
-                    tx_json_to_sign = transaction.to_json()
-                    signed_string = contract_wallet.sign(tx_json_to_sign)
-                    transaction.vin = tx_vin
-                    transaction.contract_output = co
-                    transaction.add_sign(signed_string)
-
-                    print(Wallet.verify(tx_json_to_sign, signed_string, cpub))
-
-                    print("ADD_STATUS", add_contract_tx_to_mempool(transaction))
-                    # TESTING END
-
 
                     mempool = mempool.union(mempool_list)
                     self.p = Process(target=self.__mine, args=(mempool, chain, wallet))
